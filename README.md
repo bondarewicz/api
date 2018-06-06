@@ -1,8 +1,136 @@
+## `GET /get`
+
+### Response
+
+```json
+200
+```
+
+## `POST /post`
+
+### Response
+
+```json
+201
+```
+
+## `PUT /put`
+
+### Response
+
+```json
+202
+```
+
+## `PATCH /patch`
+
+### Response
+
+```json
+202
+```
+
+## `DELETE /delete`
+
+### Response
+
+```json
+204
+```
+
+## `GET /status/:code`
+## `POST /status/:code`
+## `PUT /status/:code`
+## `PATCH /status/:code`
+## `DELETE /status/:code`
+
+### Request
+
+```json
+GET https://api.bondarewicz.com/status/200
+```
+
+### Response
+
+```json
+200
+```
+
+## `POST /anything`
+
+### Request
+
+```json
+POST https://api.bondarewicz.com/anything
+
+{
+	"hello":"world"
+}
+```
+
+### Response
+
+```json
+{
+  "hello":"world"
+}
+```
+
+## `GET /anything`
+
+### Request
+
+```json
+GET https://api.bondarewicz.com/anything
+```
+
+### Response
+
+```json
+{
+  "hello":"world"
+}
+```
+
+## `PUT /anything`
+
+### Request
+
+```json
+PUT https://api.bondarewicz.com/anything
+
+{
+	"world":"hello"
+}
+```
+
+### Response
+
+```json
+{
+	"world":"hello"
+}
+```
+
+## `DELETE /anything`
+
+### Request
+
+```json
+DELETE https://api.bondarewicz.com/anything
+```
+
+### Response
+
+```json
+204
+```
+
 ## `GET /hello`
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/hello
 ```
 
@@ -16,7 +144,7 @@ GET https://api.bondarewicz.com/hello
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/uuid
 ```
 
@@ -30,7 +158,7 @@ GET https://api.bondarewicz.com/uuid
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/ref
 ```
 
@@ -44,7 +172,7 @@ GET https://api.bondarewicz.com/ref
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/haiku
 ```
 
@@ -58,7 +186,7 @@ GET https://api.bondarewicz.com/haiku
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/sprint
 ```
 
@@ -72,7 +200,7 @@ GET https://api.bondarewicz.com/sprint
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/hex
 ```
 
@@ -86,7 +214,7 @@ GET https://api.bondarewicz.com/hex
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/ip
 ```
 
@@ -100,7 +228,7 @@ GET https://api.bondarewicz.com/ip
 
 ### Request
 
-```http
+```json
 GET https://api.bondarewicz.com/ua
 ```
 

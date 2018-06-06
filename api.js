@@ -43,8 +43,6 @@ api.disable('x-powered-by');
 api.enable('trust proxy');
 
 api.use((req, res, next) => {
-  
-  console.log('cors');
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
@@ -59,6 +57,98 @@ api.use(morgan('dev'));
 api.use(bodyParser.urlencoded({extended: true}));
 api.use(bodyParser.json());
 
+/**
+ * http verbs
+ */
+apiRoutes.get('/get', (req, res) => {
+  res.status(200).json();
+});
+
+apiRoutes.post('/post', (req, res) => {
+  res.status(201).json();
+});
+
+apiRoutes.put('/put', (req, res) => {
+  res.status(202).json();
+});
+
+apiRoutes.patch('/patch', (req, res) => {
+  res.status(202).json();
+});
+
+apiRoutes.delete('/delete', (req, res) => {
+  res.status(204).json();
+});
+
+/**
+ * http status codes
+ */
+apiRoutes.get('/status/:code', (req, res) => {
+  if(req.params.code) {
+    res.status(req.params.code).json();
+  } else {
+    res.status(200).json();
+  }
+});
+
+apiRoutes.post('/status/:code', (req, res) => {
+  if(req.params.code) {
+    res.status(req.params.code).json();
+  } else {
+    res.status(201).json();
+  }
+});
+
+apiRoutes.put('/status/:code', (req, res) => {
+  if(req.params.code) {
+    res.status(req.params.code).json();
+  } else {
+    res.status(202).json();
+  }
+});
+
+apiRoutes.patch('/status/:code', (req, res) => {
+  if(req.params.code) {
+    res.status(req.params.code).json();
+  } else {
+    res.status(202).json();
+  }
+});
+
+apiRoutes.delete('/status/:code', (req, res) => {
+  if(req.params.code) {
+    res.status(req.params.code).json();
+  } else {
+    res.status(204).json();
+  }
+});
+
+/**
+ * return anything
+ */
+apiRoutes.post('/anything', (req, res) => {
+  console.log(req.body);
+  api.set('anything', req.body);
+  let anything = api.get('anything');
+  res.status(201).json(anything);
+});
+
+apiRoutes.get('/anything', (req, res) => {
+  let anything = api.get('anything');
+  res.status(200).json(anything);
+});
+
+apiRoutes.put('/anything', (req, res) => {
+  api.set('anything', req.body);
+  let anything = api.get('anything');
+  res.status(202).json(anything);
+});
+
+apiRoutes.delete('/anything', (req, res) => {
+  api.set('anything', '');
+  res.status(204).json();
+});
+ 
 /**
  * friendly greeting
  */
