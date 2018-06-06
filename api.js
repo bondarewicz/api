@@ -147,20 +147,6 @@ apiRoutes.get('/ip', (req, res) => {
 });
 
 /**
- * isp, ipv6 & hostname
- */
-apiRoutes.get('/isp', (req, res) => {
-  
-  console.time('fetching geoiplookup');
-  fetch('https://json.geoiplookup.io/')
-    .then(data => data.json())
-    .then(data => {
-      console.timeEnd('fetching geoiplookup');
-      res.json({isp: data.isp, ip: data.ip, hostname: data.hostname});
-    });
-});
-
-/**
  * parse user agent details
  */
 apiRoutes.get('/ua', (req, res) => {
