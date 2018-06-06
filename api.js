@@ -323,6 +323,39 @@ apiRoutes.get('/ua', (req, res) => {
 });
 
 /**
+ * text -> base64
+ */
+apiRoutes.get('/encode64/:value', (req, res) => {
+  var b = new Buffer(req.params.value);
+  var b64string = b.toString('base64');
+  
+  let body = {
+    base64: b64string
+  };
+  
+  let link = api.get('API_HOSTNAME').replace(/encode64/i, 'decode64');
+  link = link.replace(req.params.value, b64string);
+  
+  body._links = {
+    "next": {
+      "href": link
+    }
+  }
+  
+  res.json(body);
+});
+
+/**
+ * base64 -> text
+ */
+apiRoutes.get('/decode64/:value', (req, res) => {
+  let b64string = req.params.value;
+  let buf = Buffer.from(b64string, 'base64');
+  
+  res.json(buf.toString());
+});
+
+/**
  * expose over api entrypoint
  */
 api.use('/', apiRoutes);
