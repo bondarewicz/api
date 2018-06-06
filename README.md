@@ -61,10 +61,10 @@ GET https://api.bondarewicz.com/status/200
 ### Request
 
 ```json
-POST https://api.bondarewicz.com/anything/:id
+POST https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 
 {
-	"hello":"world"
+	"test":"qwerty"
 }
 ```
 
@@ -72,7 +72,13 @@ POST https://api.bondarewicz.com/anything/:id
 
 ```json
 {
-  "hello":"world"
+  "test": "qwerty",
+  "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
+  "_links": {
+      "self": {
+          "href": "https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
+      }
+  }
 }
 ```
 
@@ -81,14 +87,20 @@ POST https://api.bondarewicz.com/anything/:id
 ### Request
 
 ```json
-GET https://api.bondarewicz.com/anything/:id
+GET https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 ```
 
 ### Response
 
 ```json
 {
-  "hello":"world"
+  "test": "qwerty",
+  "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
+  "_links": {
+      "self": {
+          "href": "https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
+      }
+  }
 }
 ```
 
@@ -97,10 +109,11 @@ GET https://api.bondarewicz.com/anything/:id
 ### Request
 
 ```json
-PUT https://api.bondarewicz.com/anything/:id
+PUT https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 
 {
-	"world":"hello"
+  "test": "qwerty",
+  "hello": "world",
 }
 ```
 
@@ -108,7 +121,14 @@ PUT https://api.bondarewicz.com/anything/:id
 
 ```json
 {
-	"world":"hello"
+    "test": "qwerty",
+    "hello": "world",
+    "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "_links": {
+        "self": {
+            "href": "https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
+        }
+    }
 }
 ```
 
@@ -117,7 +137,7 @@ PUT https://api.bondarewicz.com/anything/:id
 ### Request
 
 ```json
-DELETE https://api.bondarewicz.com/anything/:id
+DELETE https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 ```
 
 ### Response
