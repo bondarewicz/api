@@ -56,12 +56,12 @@ GET https://api.bondarewicz.com/status/200
 200
 ```
 
-## `POST /anything`
+## `POST /anything/:id`
 
 ### Request
 
 ```json
-POST https://api.bondarewicz.com/anything
+POST https://api.bondarewicz.com/anything/:id
 
 {
 	"hello":"world"
@@ -76,12 +76,12 @@ POST https://api.bondarewicz.com/anything
 }
 ```
 
-## `GET /anything`
+## `GET /anything/:id`
 
 ### Request
 
 ```json
-GET https://api.bondarewicz.com/anything
+GET https://api.bondarewicz.com/anything/:id
 ```
 
 ### Response
@@ -92,12 +92,12 @@ GET https://api.bondarewicz.com/anything
 }
 ```
 
-## `PUT /anything`
+## `PUT /anything:/id`
 
 ### Request
 
 ```json
-PUT https://api.bondarewicz.com/anything
+PUT https://api.bondarewicz.com/anything/:id
 
 {
 	"world":"hello"
@@ -112,12 +112,12 @@ PUT https://api.bondarewicz.com/anything
 }
 ```
 
-## `DELETE /anything`
+## `DELETE /anything/:id`
 
 ### Request
 
 ```json
-DELETE https://api.bondarewicz.com/anything
+DELETE https://api.bondarewicz.com/anything/:id
 ```
 
 ### Response

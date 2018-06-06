@@ -6,13 +6,26 @@ const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const fetch = require('node-fetch');
 const uaParser = require('ua-parser-js');
+const dotenv = require('dotenv');
 const haiku = require('./haiku.json');
+const uuid = require('uuid');
 // 
 const apiRoutes = express.Router();
 const api = express();
 
+/**
+ * Load env configuration
+ */
+dotenv.config();
+
 api.set('adjs', haiku.adjs);
 api.set('nouns', haiku.nouns);
+
+let setHostname = (req, res, next) => {
+  api.set('API_HOSTNAME', process.env.API_HOSTNAME || req.protocol + '://' + req.get('host') + req.originalUrl);
+  next()
+}
+api.use(setHostname)
 
 /**
  * Limit each IP to 1000 (max) requests per 1h (windowMs)
@@ -126,26 +139,88 @@ apiRoutes.delete('/status/:code', (req, res) => {
 /**
  * return anything
  */
-apiRoutes.post('/anything', (req, res) => {
-  console.log(req.body);
-  api.set('anything', req.body);
-  let anything = api.get('anything');
+apiRoutes.post('/anything/:id?', (req, res) => {
+  
+  let anything = null;
+  
+  if(req.params.id) {
+    let entity = req.body;
+    entity.id = req.params.id;
+    entity._links = {
+      "self": {
+        "href": api.get('API_HOSTNAME')
+      }
+    }
+    
+    api.set(req.params.id, entity);
+    anything = api.get(req.params.id);
+  } else {
+    let entity = req.body;
+    entity._links = {
+      "self": {
+        "href": api.get('API_HOSTNAME')
+      }
+    }
+    api.set('anything', entity);
+    anything = api.get('anything');
+  }
+  
   res.status(201).json(anything);
 });
 
-apiRoutes.get('/anything', (req, res) => {
-  let anything = api.get('anything');
-  res.status(200).json(anything);
+apiRoutes.get('/anything/:id?', (req, res) => {
+  
+  let anything = null;
+  
+  if(req.params.id) {
+    anything = api.get(req.params.id);
+  } else {
+    anything = api.get('anything');
+  }
+  
+  if(anything) {
+    res.status(200).json(anything);
+  } else {
+    res.status(404).json();
+  }
+  
 });
 
-apiRoutes.put('/anything', (req, res) => {
-  api.set('anything', req.body);
-  let anything = api.get('anything');
+apiRoutes.put('/anything/:id?', (req, res) => {
+  
+  let anything = null;
+  
+  if(req.params.id) {
+    let entity = req.body;
+    entity.id = req.params.id;
+    entity._links = {
+      "self": {
+        "href": api.get('API_HOSTNAME')
+      }
+    }
+    
+    api.set(req.params.id, entity);
+    anything = api.get(req.params.id);
+  } else {
+    let entity = req.body;
+    entity._links = {
+      "self": {
+        "href": api.get('API_HOSTNAME')
+      }
+    }
+    api.set('anything', entity);
+    anything = api.get('anything');
+  }
   res.status(202).json(anything);
 });
 
-apiRoutes.delete('/anything', (req, res) => {
-  api.set('anything', '');
+apiRoutes.delete('/anything/:id?', (req, res) => {
+  if(req.params.id) {
+    api.set(req.params.id, null);
+  } else {
+    api.set('anything', null);  
+  }
+  
   res.status(204).json();
 });
  
@@ -164,13 +239,7 @@ apiRoutes.get('/hello', (req, res) => {
  * uuid v4
  */
 apiRoutes.get('/uuid', (req, res) => {
-  let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    let r = Math.random() * 16 | 0;
-    let v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-
-  res.json(uuid);
+  res.json(uuid());
 });
 
 /**
