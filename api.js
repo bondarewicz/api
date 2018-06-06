@@ -8,7 +8,7 @@ const fetch = require('node-fetch');
 const uaParser = require('ua-parser-js');
 const dotenv = require('dotenv');
 const haiku = require('./haiku.json');
-const uuid = require('uuid');
+const helpers = require('./helpers.js');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -239,7 +239,7 @@ apiRoutes.get('/hello', (req, res) => {
  * uuid v4
  */
 apiRoutes.get('/uuid', (req, res) => {
-  res.json(uuid());
+  res.json(helpers.uuid());
 });
 
 /**
