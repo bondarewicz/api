@@ -24,6 +24,8 @@
     "express": "^4.16.3",
     "express-rate-limit": "^2.11.0",
     "helmet": "^3.12.1",
-    "morgan": "^1.9.0"
+    "morgan": "^1.9.0",
+    "node-fetch": "^2.1.2",
+    "ua-parser-js": "^0.7.18"
   }
 }

@@ -4,9 +4,15 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
-
+const fetch = require('node-fetch');
+const uaParser = require('ua-parser-js');
+const haiku = require('./haiku.json');
+// 
 const apiRoutes = express.Router();
 const api = express();
+
+api.set('adjs', haiku.adjs);
+api.set('nouns', haiku.nouns);
 
 /**
  * Limit each IP to 1000 (max) requests per 1h (windowMs)
@@ -34,6 +40,7 @@ api.options('*', cors())
  * remove default express header
  */
 api.disable('x-powered-by');
+api.enable('trust proxy');
 
 api.use(morgan('dev'));
 
@@ -44,12 +51,123 @@ api.use(morgan('dev'));
 api.use(bodyParser.urlencoded({extended: true}));
 api.use(bodyParser.json());
 
+/**
+ * friendly greeting
+ */
 apiRoutes.get('/hello', (req, res) => {
   let time = new Date();
   const dayNames = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
   const greet = dayNames[time.getDay()];
 
   res.json(`Happy ${greet}!`);
+});
+
+/**
+ * uuid v4
+ */
+apiRoutes.get('/uuid', (req, res) => {
+  let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    let r = Math.random() * 16 | 0;
+    let v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+
+  res.json(uuid);
+});
+
+/**
+ * unique "enough" ref
+ */
+apiRoutes.get('/ref', (req, res) => {
+  let ref = "";
+  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+  for (var i = 0; i < 36; i++) {
+    ref += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+
+  res.json(ref);
+});
+
+/**
+ * heroku inspired "haiku" project name
+ */
+apiRoutes.get('/haiku', (req, res) => {
+  
+  let rnd = Math.floor(Math.random() * Math.pow(2,12))
+  let haiku = `${api.get('adjs')[rnd%64]}-${api.get('nouns')[rnd%64]}-${(Math.floor(Math.random() * (9999 - 1000)) + 1000)}`;
+
+  res.json(haiku);
+});
+
+/**
+ * week of the year sprint name
+ * @todo allow passing number of weeks
+ */
+apiRoutes.get('/sprint', (req, res) => {
+  
+  let d = new Date();
+  // set to nearest Thursday: current date + 4 - current day number || make Sunday's day number 7
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  // get first day of year
+  let yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // calculate full weeks to nearest Thursday
+  let weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+  res.json(`${d.getUTCFullYear()}W${weekNo}`);
+});
+
+/**
+ * hex color
+ */
+apiRoutes.get('/hex', (req, res) => {
+  const hex = Math.floor(Math.random()*16777215).toString(16);
+  res.json(`#${hex}`);
+});
+
+/**
+ * ipv4
+ *
+ * TODO GET https://api.ipify.org/?format=json
+ */
+apiRoutes.get('/ip', (req, res) => {
+  
+  let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  ip = ip.split(':').pop();
+  ip = (ip === '1') ? '127.0.0.1' : ip;
+  res.json(ip);
+});
+
+/**
+ * isp, ipv6 & hostname
+ */
+apiRoutes.get('/isp', (req, res) => {
+  
+  console.time('fetching geoiplookup');
+  fetch('https://json.geoiplookup.io/')
+    .then(data => data.json())
+    .then(data => {
+      console.timeEnd('fetching geoiplookup');
+      res.json({isp: data.isp, ip: data.ip, hostname: data.hostname});
+    });
+});
+
+/**
+ * parse user agent details
+ */
+apiRoutes.get('/ua', (req, res) => {
+  
+  const ua = uaParser(req.headers['user-agent']);
+  console.log(ua);
+  const agent = {
+    ua: ua.ua,
+    browser: (ua.browser.name !== undefined) ? `${ua.browser.name} ${ua.browser.version}` : ``,
+    engine: (ua.engine.name !== undefined) ? `${ua.engine.name} ${ua.engine.version}` : ``,
+    os: (ua.os.name !== undefined) ? `${ua.os.name} ${ua.os.version}` : ``,
+    device: (ua.device.vendor !== undefined) ? `${ua.device.vendor} ${ua.device.model}` : ``
+  }
+  
+  res.json(agent);
 });
 
 /**
