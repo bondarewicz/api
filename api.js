@@ -42,6 +42,14 @@ api.options('*', cors())
 api.disable('x-powered-by');
 api.enable('trust proxy');
 
+api.use((req, res, next) => {
+  
+  console.log('cors');
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+
 api.use(morgan('dev'));
 
 /**
@@ -158,7 +166,6 @@ apiRoutes.get('/isp', (req, res) => {
 apiRoutes.get('/ua', (req, res) => {
   
   const ua = uaParser(req.headers['user-agent']);
-  console.log(ua);
   const agent = {
     ua: ua.ua,
     browser: (ua.browser.name !== undefined) ? `${ua.browser.name} ${ua.browser.version}` : ``,
