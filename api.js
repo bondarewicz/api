@@ -46,13 +46,15 @@ let crudLinks = (req, res, next) => {
 
 let statusLinks = (req, res, next) => {
   
-  let st = {};
+  let st = [];
   const m = req.method;
   
   statuses.map((s) => {
-    let c = Object.keys(s)[0];
-    st[c] = api.get('API_HOSTNAME').replace('statuses', 'status/'+c)
-    console.log('->', Object.keys(s)[0]);
+    st.push({ 
+      code:s.code, 
+      title: s.title,
+      description: s.description,
+      link: api.get('API_HOSTNAME').replace('statuses', 'status/' + s.code) });
   })
   api.set('CODES', st);
 
@@ -130,12 +132,7 @@ apiRoutes.delete('/delete', (req, res) => {
 });
 
 apiRoutes.get('/statuses', statusLinks, (req, res) => {
-  console.log(api.get('CODES'));
-  const body = {
-    statuses: api.set('CODES')
-  }
-  
-  // body.links = api.set('CODES');
+  const body = { statuses: api.set('CODES') };
   res.json(body);
 });
 /**
