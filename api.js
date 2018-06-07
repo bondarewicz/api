@@ -21,11 +21,27 @@ dotenv.config();
 api.set('adjs', haiku.adjs);
 api.set('nouns', haiku.nouns);
 
+/**
+ * middlewares
+ */
 let setHostname = (req, res, next) => {
   api.set('API_HOSTNAME', process.env.API_HOSTNAME || req.protocol + '://' + req.get('host') + req.originalUrl);
   next()
 }
-api.use(setHostname)
+
+api.use(setHostname);
+
+let hyperLinks = (req, res, next) => {
+  
+  api.set('LINKS', {
+    'get': api.get('API_HOSTNAME'),
+    'post': api.get('API_HOSTNAME'),
+    'put': api.get('API_HOSTNAME'),
+    'delete': api.get('API_HOSTNAME')
+  });
+
+  next();
+}
 
 /**
  * Limit each IP to 1000 (max) requests per 1h (windowMs)
@@ -56,6 +72,10 @@ api.disable('x-powered-by');
 api.enable('trust proxy');
 
 api.use((req, res, next) => {
+  // http://jsonapi.org/
+  res.setHeader('Content-Type', 'application/vnd.api+json');
+  
+  // cors
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
@@ -139,28 +159,22 @@ apiRoutes.delete('/status/:code', (req, res) => {
 /**
  * return anything
  */
-apiRoutes.post('/anything/:id?', (req, res) => {
+apiRoutes.post('/anything/:id?', hyperLinks, (req, res) => {
   
   let anything = null;
   
   if(req.params.id) {
-    let entity = req.body;
-    entity.id = req.params.id;
-    entity._links = {
-      "self": {
-        "href": api.get('API_HOSTNAME')
-      }
-    }
+    
+    const entity = Object.assign({ id : req.params.id }, req.body);
+    entity.links = api.get('LINKS');
     
     api.set(req.params.id, entity);
     anything = api.get(req.params.id);
   } else {
-    let entity = req.body;
-    entity._links = {
-      "self": {
-        "href": api.get('API_HOSTNAME')
-      }
-    }
+    
+    const entity = Object.assign({}, req.body);
+    entity.links = api.get('LINKS');
+    
     api.set('anything', entity);
     anything = api.get('anything');
   }
@@ -186,28 +200,20 @@ apiRoutes.get('/anything/:id?', (req, res) => {
   
 });
 
-apiRoutes.put('/anything/:id?', (req, res) => {
+apiRoutes.put('/anything/:id?', hyperLinks, (req, res) => {
   
   let anything = null;
   
   if(req.params.id) {
-    let entity = req.body;
-    entity.id = req.params.id;
-    entity._links = {
-      "self": {
-        "href": api.get('API_HOSTNAME')
-      }
-    }
+    const entity = Object.assign({ id : req.params.id }, req.body);
+    entity.links = api.get('LINKS');
     
     api.set(req.params.id, entity);
     anything = api.get(req.params.id);
   } else {
-    let entity = req.body;
-    entity._links = {
-      "self": {
-        "href": api.get('API_HOSTNAME')
-      }
-    }
+    const entity = Object.assign({}, req.body);
+    entity.links = api.get('LINKS');
+    
     api.set('anything', entity);
     anything = api.get('anything');
   }
