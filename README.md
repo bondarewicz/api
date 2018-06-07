@@ -73,8 +73,8 @@ POST https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 ```json
 {
   "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
-	"test": "qwerty",  
-	"links": {
+  "test": "qwerty",
+  "links": {
     "get": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
     "post": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
     "put": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
