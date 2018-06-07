@@ -1,3 +1,5 @@
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/2c19f5b3298aa50db70d)
+
 ## `GET /get`
 
 ### Response
