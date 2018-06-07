@@ -8,6 +8,7 @@ const fetch = require('node-fetch');
 const uaParser = require('ua-parser-js');
 const dotenv = require('dotenv');
 const haiku = require('./haiku.json');
+const statuses = require('./statuses.json').statuses;
 const helpers = require('./helpers.js');
 // 
 const apiRoutes = express.Router();
@@ -31,9 +32,9 @@ let setHostname = (req, res, next) => {
 
 api.use(setHostname);
 
-let hyperLinks = (req, res, next) => {
+let crudLinks = (req, res, next) => {
   
-  api.set('LINKS', {
+  api.set('CRUD', {
     'get': api.get('API_HOSTNAME'),
     'post': api.get('API_HOSTNAME'),
     'put': api.get('API_HOSTNAME'),
@@ -42,6 +43,21 @@ let hyperLinks = (req, res, next) => {
 
   next();
 }
+
+let statusLinks = (req, res, next) => {
+  
+  let st = {};
+  const m = req.method;
+  
+  statuses.map((s) => {
+    let c = Object.keys(s)[0];
+    st[c] = api.get('API_HOSTNAME').replace('statuses', 'status/'+c)
+    console.log('->', Object.keys(s)[0]);
+  })
+  api.set('CODES', st);
+
+  next();
+};
 
 /**
  * Limit each IP to 1000 (max) requests per 1h (windowMs)
@@ -113,6 +129,16 @@ apiRoutes.delete('/delete', (req, res) => {
   res.status(204).json();
 });
 
+apiRoutes.get('/statuses', statusLinks, (req, res) => {
+  console.log(api.get('CODES'));
+  const body = {
+    codes: Object.assign([], statuses),
+    links: api.set('CODES')
+  }
+  
+  // body.links = api.set('CODES');
+  res.json(body);
+});
 /**
  * http status codes
  */
@@ -159,21 +185,21 @@ apiRoutes.delete('/status/:code', (req, res) => {
 /**
  * return anything
  */
-apiRoutes.post('/anything/:id?', hyperLinks, (req, res) => {
+apiRoutes.post('/anything/:id?', crudLinks, (req, res) => {
   
   let anything = null;
   
   if(req.params.id) {
     
     const entity = Object.assign({ id : req.params.id }, req.body);
-    entity.links = api.get('LINKS');
+    entity.links = api.get('CRUD');
     
     api.set(req.params.id, entity);
     anything = api.get(req.params.id);
   } else {
     
     const entity = Object.assign({}, req.body);
-    entity.links = api.get('LINKS');
+    entity.links = api.get('CRUD');
     
     api.set('anything', entity);
     anything = api.get('anything');
@@ -200,19 +226,19 @@ apiRoutes.get('/anything/:id?', (req, res) => {
   
 });
 
-apiRoutes.put('/anything/:id?', hyperLinks, (req, res) => {
+apiRoutes.put('/anything/:id?', crudLinks, (req, res) => {
   
   let anything = null;
   
   if(req.params.id) {
     const entity = Object.assign({ id : req.params.id }, req.body);
-    entity.links = api.get('LINKS');
+    entity.links = api.get('CRUD');
     
     api.set(req.params.id, entity);
     anything = api.get(req.params.id);
   } else {
     const entity = Object.assign({}, req.body);
-    entity.links = api.get('LINKS');
+    entity.links = api.get('CRUD');
     
     api.set('anything', entity);
     anything = api.get('anything');
@@ -339,7 +365,7 @@ apiRoutes.get('/encode64/:value', (req, res) => {
     base64: b64string
   };
   
-  let link = api.get('API_HOSTNAME').replace(/encode64/i, 'decode64');
+  let link = api.get('API_HOSTNAME')(/encode64/i, 'decode64');
   link = link.replace(req.params.value, b64string);
   
   body._links = {
