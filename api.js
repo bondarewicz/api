@@ -132,8 +132,7 @@ apiRoutes.delete('/delete', (req, res) => {
 apiRoutes.get('/statuses', statusLinks, (req, res) => {
   console.log(api.get('CODES'));
   const body = {
-    codes: Object.assign([], statuses),
-    links: api.set('CODES')
+    statuses: api.set('CODES')
   }
   
   // body.links = api.set('CODES');
