@@ -72,12 +72,13 @@ POST https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 
 ```json
 {
-  "test": "qwerty",
   "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
-  "_links": {
-      "self": {
-          "href": "https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
-      }
+	"test": "qwerty",  
+	"links": {
+    "get": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "post": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "put": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "delete": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
   }
 }
 ```
@@ -94,12 +95,13 @@ GET https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 
 ```json
 {
-  "test": "qwerty",
   "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
-  "_links": {
-      "self": {
-          "href": "https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
-      }
+	"test": "qwerty",
+	"links": {
+    "get": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "post": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "put": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "delete": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
   }
 }
 ```
@@ -121,14 +123,15 @@ PUT https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b
 
 ```json
 {
-    "test": "qwerty",
-    "hello": "world",
-    "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
-    "_links": {
-        "self": {
-            "href": "https://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
-        }
-    }
+  "id": "815a99d0-ad89-467b-ad58-7b9571bf587b",
+	"test": "qwerty",
+  "hello": "world",
+	"links": {
+    "get": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "post": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "put": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b",
+    "delete": "http://api.bondarewicz.com/anything/815a99d0-ad89-467b-ad58-7b9571bf587b"
+  }
 }
 ```
 
