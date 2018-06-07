@@ -361,15 +361,10 @@ apiRoutes.get('/encode64/:value', (req, res) => {
     base64: b64string
   };
   
-  let link = api.get('API_HOSTNAME')(/encode64/i, 'decode64');
+  let link = api.get('API_HOSTNAME').replace(/encode64/i, 'decode64');
   link = link.replace(req.params.value, b64string);
   
-  body._links = {
-    "next": {
-      "href": link
-    }
-  }
-  
+  body.links = { "decode": link }
   res.json(body);
 });
 
@@ -379,8 +374,16 @@ apiRoutes.get('/encode64/:value', (req, res) => {
 apiRoutes.get('/decode64/:value', (req, res) => {
   let b64string = req.params.value;
   let buf = Buffer.from(b64string, 'base64');
+  let link = api.get('API_HOSTNAME').replace(/decode64/i, 'encode64');
+  link = link.replace(req.params.value, buf);
   
-  res.json(buf.toString());
+  let body = {
+    text: buf.toString(),
+    links: {
+      encode: link
+    }
+  }
+  res.json(body);
 });
 
 /**

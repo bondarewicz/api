@@ -635,3 +635,41 @@ GET https://api.bondarewicz.com/ua
   "device": ""
 }
 ```
+
+## `GET /encode64/:value`
+
+### Request
+
+```json
+GET https://api.bondarewicz.com/encode64/qwerty
+```
+
+### Response
+
+```json
+{
+  "base64": "cXdlcnR5",
+  "links": {
+    "decode": "https://api.bondarewicz.com/decode64/cXdlcnR5"
+  }
+}
+```
+
+## `GET /decode64/:value`
+
+### Request
+
+```json
+GET https://api.bondarewicz.com/decode64/cXdlcnR5
+```
+
+### Response
+
+```json
+{
+  "text": "qwerty",
+  "links": {
+    "encode": "https://api.bondarewicz.com/encode64/qwerty"
+  }
+}
+```
