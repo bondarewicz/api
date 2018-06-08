@@ -5,110 +5,53 @@ const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const fetch = require('node-fetch');
-const uaParser = require('ua-parser-js');
-const dotenv = require('dotenv');
-const haiku = require('./haiku.json');
-const statuses = require('./statuses.json').statuses;
-const helpers = require('./helpers.js');
-const mongo = require('mongodb').MongoClient
-
+// 
+const { testVerbs, httpStatuses, testStatus } = require('./controllers');
+const { hello, uuid, ref, haiku, sprintName, hexColor, ip, userAgent } = require('./controllers');
+const { encode64, decode64 } = require('./controllers');
+const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./controllers');
 // 
 const apiRoutes = express.Router();
 const api = express();
 
 /**
- * Load env configuration
+ * middleware
  */
-dotenv.config();
-
-api.set('adjs', haiku.adjs);
-api.set('nouns', haiku.nouns);
-
-let db;
-
-let url = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_ENDPOINT}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}`
-mongo.connect(url, (err, client) => {
-  if (err) return console.log(err);
-  db = client.db(process.env.MONGO_DB);
-})
-
-/**
- * middlewares
- */
-let setHostname = (req, res, next) => {
-  api.set('API_HOSTNAME', process.env.API_HOSTNAME || req.protocol + '://' + req.get('host') + req.originalUrl);
-  next()
-}
-
-api.use(setHostname);
-
-let crudLinks = (req, res, next) => {
+let customHeaders = (req, res, next) => {
   
-  api.set('CRUD', {
-    'get': api.get('API_HOSTNAME'),
-    'post': api.get('API_HOSTNAME'),
-    'put': api.get('API_HOSTNAME'),
-    'delete': api.get('API_HOSTNAME')
-  });
-
-  next();
-}
-
-let statusLinks = (req, res, next) => {
-  
-  let st = [];
-  const m = req.method;
-  
-  statuses.map((s) => {
-    st.push({ 
-      code:s.code, 
-      title: s.title,
-      description: s.description,
-      link: api.get('API_HOSTNAME').replace('statuses', 'status/' + s.code) });
-  })
-  api.set('CODES', st);
-
-  next();
-};
-
-/**
- * Limit each IP to 1000 (max) requests per 1h (windowMs)
- * return responses in full speed (delayMs) until the limit is reached
- */
-let limiter = new rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 1000,
-  delayMs: 0
-});
-
-api.use(limiter);
-
-/**
- * set security-related HTTP headers
- */
-api.use(helmet());
-
-/**
- * enable cors including pre-flight
- */
-api.options('*', cors())
-
-/**
- * remove default express header
- */
-api.disable('x-powered-by');
-api.enable('trust proxy');
-
-api.use((req, res, next) => {
-  // http://jsonapi.org/
+  // TODO links as per http://jsonapi.org/
   res.setHeader('Content-Type', 'application/vnd.api+json');
   
   // cors
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
+}
+
+api.use(customHeaders);
+
+/**
+ * Limit each IP to 1000 (max) requests per 1h (windowMs)
+ * return responses in full speed (delayMs) until the limit is reached
+ */
+let limits = new rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 1000,
+  delayMs: 0
 });
 
+api.use(limits);
+
+/**
+ * enable cors including pre-flight
+ * remove default express header
+ * set security-related HTTP headers
+ * enable logging
+ */
+api.options('*', cors())
+api.disable('x-powered-by');
+api.enable('trust proxy');
+api.use(helmet());
 api.use(morgan('dev'));
 
 /**
@@ -119,324 +62,54 @@ api.use(bodyParser.urlencoded({extended: true}));
 api.use(bodyParser.json());
 
 /**
- * http verbs
+ * hello
  */
-apiRoutes.get('/get', (req, res) => {
-  res.status(200).json();
-});
-
-apiRoutes.post('/post', (req, res) => {
-  res.status(201).json();
-});
-
-apiRoutes.put('/put', (req, res) => {
-  res.status(202).json();
-});
-
-apiRoutes.patch('/patch', (req, res) => {
-  res.status(202).json();
-});
-
-apiRoutes.delete('/delete', (req, res) => {
-  res.status(204).json();
-});
-
-apiRoutes.get('/statuses', statusLinks, (req, res) => {
-  const body = { statuses: api.set('CODES') };
-  res.json(body);
-});
-/**
- * http status codes
- */
-apiRoutes.get('/status/:code', (req, res) => {
-  if(req.params.code) {
-    res.status(req.params.code).json();
-  } else {
-    res.status(200).json();
-  }
-});
-
-apiRoutes.post('/status/:code', (req, res) => {
-  if(req.params.code) {
-    res.status(req.params.code).json();
-  } else {
-    res.status(201).json();
-  }
-});
-
-apiRoutes.put('/status/:code', (req, res) => {
-  if(req.params.code) {
-    res.status(req.params.code).json();
-  } else {
-    res.status(202).json();
-  }
-});
-
-apiRoutes.patch('/status/:code', (req, res) => {
-  if(req.params.code) {
-    res.status(req.params.code).json();
-  } else {
-    res.status(202).json();
-  }
-});
-
-apiRoutes.delete('/status/:code', (req, res) => {
-  if(req.params.code) {
-    res.status(req.params.code).json();
-  } else {
-    res.status(204).json();
-  }
-});
+apiRoutes.get('/hello', hello);
 
 /**
- * return anything
+ * Utilities
  */
-apiRoutes.purge('/anything', (req, res) => {
-  db.collection('anythings').remove({}, function(err, result){
-    if (err) throw err;
-    res.status(410).json('purged!');
-  });
-});
-
-apiRoutes.post('/anything/:id?', crudLinks, (req, res) => {
-  
-  let anything = null;
-  
-  if(req.params.id) {
-    
-    db.collection('anythings').find({ref: req.params.id}).limit(1).toArray((err, anythings) => {
-      if ( anythings.length > 0) {
-        
-        const error = {
-          'status': '409',
-          'title':  `Anything with the same id already exists.`,
-          'detail':  `Use DELETE ${api.get('API_HOSTNAME')} first then try again or simply use PUT ${api.get('API_HOSTNAME')} instead.`
-        };
-        
-        res.status(409).json(error);
-        
-      } else {
-        
-        db.collection('anythings').insertOne({ 'ref': req.params.id, 'body': req.body }, (err, recs) => {
-           if(err) throw err;
-           console.log("Anything inserted into db");
-           console.log(recs.ops);
-           res.status(201).json(recs.ops[0].body);
-        });
-        
-      }
-    });
-    
-  } else {
-  
-    const entity = Object.assign({}, req.body);
-    // entity.links = api.get('CRUD');
-    
-    api.set('anything', entity);
-    anything = api.get('anything');
-    res.status(201).json(anything);
-  }
-});
-
-apiRoutes.get('/anything/:id?', (req, res) => {
-  
-  if(req.params.id) {
-    
-    db.collection('anythings').find({ 'ref': req.params.id }).limit(1).toArray((err, anythings) => {
-      if(err) throw err;
-      
-      if(anythings.length > 0) {
-        res.json(anythings[0].body);
-      } else {
-        res.status(404).json();
-      } 
-    });
-    
-  } else {
-    res.status(200).json(api.get('anything'));
-  }
-  
-});
-
-apiRoutes.put('/anything/:id?', crudLinks, (req, res) => {
-  
-  if(req.params.id) {
-    
-    db.collection('anythings').updateOne({'ref': req.params.id}, {$set: {'body': req.body}}, { upsert: true }, (err, anythings) => {
-      if(err) throw err;
-        
-      if(anythings.modifiedCount) {
-        res.status(202).json();
-      } else {
-        res.status(304).json();
-      }
-    });
-    
-  } else {
-    const entity = Object.assign({}, req.body);
-    // entity.links = api.get('CRUD');
-    
-    api.set('anything', entity);
-    res.status(202).json(api.get('anything'));
-  }
-  
-});
-
-apiRoutes.delete('/anything/:id?', (req, res) => {
-  if(req.params.id) {
-    
-    db.collection('anythings').deleteOne({'ref': req.params.id}, (err, anythings) => {
-        if(err) throw err;
-        
-        if(anythings.deletedCount) {
-          res.status(204).json();
-        } else {
-          res.status(404).json();
-        }
-    });
-    
-  } else {
-    api.set('anything', null);  
-    res.status(200).json(api.get('anything'));
-  }
-});
- 
-/**
- * friendly greeting
- */
-apiRoutes.get('/hello', (req, res) => {
-  let time = new Date();
-  const dayNames = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
-  const greet = dayNames[time.getDay()];
-
-  res.json(`Happy ${greet}!`);
-});
+apiRoutes.get('/uuid', uuid);
+apiRoutes.get('/ref', ref);
+apiRoutes.get('/haiku', haiku);
+apiRoutes.get('/sprint', sprintName);
+apiRoutes.get('/color', hexColor);
+apiRoutes.get('/ip', ip);
+apiRoutes.get('/ua', userAgent);
+apiRoutes.get('/encode64/:value', encode64);
+apiRoutes.get('/decode64/:value', decode64);
 
 /**
- * uuid v4
+ * HTTP verbs
  */
-apiRoutes.get('/uuid', (req, res) => {
-  res.json(helpers.uuid());
-});
+apiRoutes.get('/verbs', testVerbs);
+apiRoutes.post('/verbs', testVerbs);
+apiRoutes.put('/verbs', testVerbs);
+apiRoutes.patch('/verbs', testVerbs);
+apiRoutes.delete('/verbs', testVerbs);
+apiRoutes.purge('/verbs', testVerbs);
 
 /**
- * unique "enough" ref
+ * HTTP status codes
  */
-apiRoutes.get('/ref', (req, res) => {
-  let ref = "";
-  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-  for (var i = 0; i < 36; i++) {
-    ref += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-
-  res.json(ref);
-});
+apiRoutes.get('/statuses', httpStatuses);
+apiRoutes.get('/statuses/:code', testStatus);
+apiRoutes.post('/statuses/:code', testStatus);
+apiRoutes.put('/statuses/:code', testStatus);
+apiRoutes.patch('/statuses/:code', testStatus);
+apiRoutes.delete('/statuses/:code', testStatus);
 
 /**
- * heroku inspired "haiku" project name
+ * anything
  */
-apiRoutes.get('/haiku', (req, res) => {
-  
-  let rnd = Math.floor(Math.random() * Math.pow(2,12))
-  let haiku = `${api.get('adjs')[rnd%64]}-${api.get('nouns')[rnd%64]}-${(Math.floor(Math.random() * (9999 - 1000)) + 1000)}`;
-
-  res.json(haiku);
-});
+apiRoutes.post('/anythings/:id?', postAnything);
+apiRoutes.get('/anythings/:id?', getAnything);
+apiRoutes.put('/anythings/:id?', putAnything);
+apiRoutes.delete('/anythings/:id?', deleteAnything);
+apiRoutes.purge('/anythings', purgeAnything);
 
 /**
- * week of the year sprint name
- * @todo allow passing number of weeks
+ * expose over v1 entrypoint
  */
-apiRoutes.get('/sprint', (req, res) => {
-  
-  let d = new Date();
-  // set to nearest Thursday: current date + 4 - current day number || make Sunday's day number 7
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  // get first day of year
-  let yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  // calculate full weeks to nearest Thursday
-  let weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-
-  res.json(`${d.getUTCFullYear()}W${weekNo}`);
-});
-
-/**
- * hex color
- */
-apiRoutes.get('/hex', (req, res) => {
-  const hex = Math.floor(Math.random()*16777215).toString(16);
-  res.json(`#${hex}`);
-});
-
-/**
- * ipv4
- *
- * TODO GET https://api.ipify.org/?format=json
- */
-apiRoutes.get('/ip', (req, res) => {
-  
-  let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  ip = ip.split(':').pop();
-  ip = (ip === '1') ? '127.0.0.1' : ip;
-  res.json(ip);
-});
-
-/**
- * parse user agent details
- */
-apiRoutes.get('/ua', (req, res) => {
-  
-  const ua = uaParser(req.headers['user-agent']);
-  const agent = {
-    ua: ua.ua,
-    browser: (ua.browser.name !== undefined) ? `${ua.browser.name} ${ua.browser.version}` : ``,
-    engine: (ua.engine.name !== undefined) ? `${ua.engine.name} ${ua.engine.version}` : ``,
-    os: (ua.os.name !== undefined) ? `${ua.os.name} ${ua.os.version}` : ``,
-    device: (ua.device.vendor !== undefined) ? `${ua.device.vendor} ${ua.device.model}` : ``
-  }
-  
-  res.json(agent);
-});
-
-/**
- * text -> base64
- */
-apiRoutes.get('/encode64/:value', (req, res) => {
-  var b = new Buffer(req.params.value);
-  var b64string = b.toString('base64');
-  
-  let body = {
-    base64: b64string
-  };
-  
-  let link = api.get('API_HOSTNAME').replace(/encode64/i, 'decode64');
-  link = link.replace(req.params.value, b64string);
-  
-  body.links = { "decode": link }
-  res.json(body);
-});
-
-/**
- * base64 -> text
- */
-apiRoutes.get('/decode64/:value', (req, res) => {
-  let b64string = req.params.value;
-  let buf = Buffer.from(b64string, 'base64');
-  let link = api.get('API_HOSTNAME').replace(/decode64/i, 'encode64');
-  link = link.replace(req.params.value, buf);
-  
-  let body = {
-    text: buf.toString(),
-    links: {
-      encode: link
-    }
-  }
-  res.json(body);
-});
-
-/**
- * expose over api entrypoint
- */
-api.use('/', apiRoutes);
+api.use('/v1', apiRoutes);
 module.exports = api;
