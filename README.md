@@ -22,12 +22,12 @@ Rate limit is set per each IP to 1000 requests per 1h.
 
 #### HTTP verbs resources
 
-- **[<code>GET</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/statuses/GET_verbs.md)**
-- **[<code>POST</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/statuses/POST_verbs.md)**
-- **[<code>PUT</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/statuses/PUT_verbs.md)**
-- **[<code>PATCH</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/statuses/PATCH_verbs.md)**
-- **[<code>DELETE</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/statuses/DELETE_verbs.md)**
-- **[<code>PURGE</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/statuses/PURGE_verbs.md)**
+- **[<code>GET</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/verbs/GET_verbs.md)**
+- **[<code>POST</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/verbs/POST_verbs.md)**
+- **[<code>PUT</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/verbs/PUT_verbs.md)**
+- **[<code>PATCH</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/verbs/PATCH_verbs.md)**
+- **[<code>DELETE</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/verbs/DELETE_verbs.md)**
+- **[<code>PURGE</code> verbs](https://github.com/bondarewicz/api/blob/master/docs/verbs/PURGE_verbs.md)**
 
 #### HTTP status code resources
 
