@@ -10,6 +10,8 @@ const dotenv = require('dotenv');
 const haiku = require('./haiku.json');
 const statuses = require('./statuses.json').statuses;
 const helpers = require('./helpers.js');
+const mongo = require('mongodb').MongoClient
+
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -21,6 +23,14 @@ dotenv.config();
 
 api.set('adjs', haiku.adjs);
 api.set('nouns', haiku.nouns);
+
+let db;
+
+let url = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_ENDPOINT}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}`
+mongo.connect(url, (err, client) => {
+  if (err) return console.log(err);
+  db = client.db(process.env.MONGO_DB);
+})
 
 /**
  * middlewares
@@ -181,75 +191,114 @@ apiRoutes.delete('/status/:code', (req, res) => {
 /**
  * return anything
  */
+apiRoutes.purge('/anything', (req, res) => {
+  db.collection('anythings').remove({}, function(err, result){
+    if (err) throw err;
+    res.status(410).json('purged!');
+  });
+});
+
 apiRoutes.post('/anything/:id?', crudLinks, (req, res) => {
   
   let anything = null;
   
   if(req.params.id) {
     
-    const entity = Object.assign({ id : req.params.id }, req.body);
-    entity.links = api.get('CRUD');
+    db.collection('anythings').find({ref: req.params.id}).limit(1).toArray((err, anythings) => {
+      if ( anythings.length > 0) {
+        
+        const error = {
+          'status': '409',
+          'title':  `Anything with the same id already exists.`,
+          'detail':  `Use DELETE ${api.get('API_HOSTNAME')} first then try again or simply use PUT ${api.get('API_HOSTNAME')} instead.`
+        };
+        
+        res.status(409).json(error);
+        
+      } else {
+        
+        db.collection('anythings').insertOne({ 'ref': req.params.id, 'body': req.body }, (err, recs) => {
+           if(err) throw err;
+           console.log("Anything inserted into db");
+           console.log(recs.ops);
+           res.status(201).json(recs.ops[0].body);
+        });
+        
+      }
+    });
     
-    api.set(req.params.id, entity);
-    anything = api.get(req.params.id);
   } else {
-    
+  
     const entity = Object.assign({}, req.body);
-    entity.links = api.get('CRUD');
+    // entity.links = api.get('CRUD');
     
     api.set('anything', entity);
     anything = api.get('anything');
+    res.status(201).json(anything);
   }
-  
-  res.status(201).json(anything);
 });
 
 apiRoutes.get('/anything/:id?', (req, res) => {
   
-  let anything = null;
-  
   if(req.params.id) {
-    anything = api.get(req.params.id);
+    
+    db.collection('anythings').find({ 'ref': req.params.id }).limit(1).toArray((err, anythings) => {
+      if(err) throw err;
+      
+      if(anythings.length > 0) {
+        res.json(anythings[0].body);
+      } else {
+        res.status(404).json();
+      } 
+    });
+    
   } else {
-    anything = api.get('anything');
-  }
-  
-  if(anything) {
-    res.status(200).json(anything);
-  } else {
-    res.status(404).json();
+    res.status(200).json(api.get('anything'));
   }
   
 });
 
 apiRoutes.put('/anything/:id?', crudLinks, (req, res) => {
   
-  let anything = null;
-  
   if(req.params.id) {
-    const entity = Object.assign({ id : req.params.id }, req.body);
-    entity.links = api.get('CRUD');
     
-    api.set(req.params.id, entity);
-    anything = api.get(req.params.id);
+    db.collection('anythings').updateOne({'ref': req.params.id}, {$set: {'body': req.body}}, { upsert: true }, (err, anythings) => {
+      if(err) throw err;
+        
+      if(anythings.modifiedCount) {
+        res.status(202).json();
+      } else {
+        res.status(304).json();
+      }
+    });
+    
   } else {
     const entity = Object.assign({}, req.body);
-    entity.links = api.get('CRUD');
+    // entity.links = api.get('CRUD');
     
     api.set('anything', entity);
-    anything = api.get('anything');
+    res.status(202).json(api.get('anything'));
   }
-  res.status(202).json(anything);
+  
 });
 
 apiRoutes.delete('/anything/:id?', (req, res) => {
   if(req.params.id) {
-    api.set(req.params.id, null);
+    
+    db.collection('anythings').deleteOne({'ref': req.params.id}, (err, anythings) => {
+        if(err) throw err;
+        
+        if(anythings.deletedCount) {
+          res.status(204).json();
+        } else {
+          res.status(404).json();
+        }
+    });
+    
   } else {
     api.set('anything', null);  
+    res.status(200).json(api.get('anything'));
   }
-  
-  res.status(204).json();
 });
  
 /**
