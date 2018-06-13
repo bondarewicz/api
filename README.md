@@ -45,3 +45,8 @@ Rate limit is set per each IP to 1000 requests per 1h.
 - **[<code>POST</code> anythings/:id](https://github.com/bondarewicz/api/blob/master/docs/anythings/POST_anythings_id.md)**
 - **[<code>PUT</code> anythings/:id](https://github.com/bondarewicz/api/blob/master/docs/anythings/PUT_anythings_id.md)**
 - **[<code>DELETE</code> anythings/:id](https://github.com/bondarewicz/api/blob/master/docs/anythings/DELETE_anythings_id.md)**
+
+## Support on Beerpay
+Hey dude! Help me out for a couple of :beers:!
+
+[![Beerpay](https://beerpay.io/bondarewicz/api/badge.svg?style=beer-square)](https://beerpay.io/bondarewicz/api)  [![Beerpay](https://beerpay.io/bondarewicz/api/make-wish.svg?style=flat-square)](https://beerpay.io/bondarewicz/api?focus=wish)
