@@ -1,3 +1,5 @@
+[![Beerpay](https://beerpay.io/bondarewicz/api/badge.svg?style=beer)](https://beerpay.io/bondarewicz/api)
+
 [![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/2c19f5b3298aa50db70d)
 
 ## Limits
