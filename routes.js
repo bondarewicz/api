@@ -72,7 +72,7 @@ module.exports = {
   
   version: function(req, res) {
     fetch('https://api.github.com/repos/bondarewicz/com/commits', {
-      headers: { 'Authorization': process.env.GITHUB_TOKEN }
+      headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN }` }
     })
     .then(res => res.json())
     .then(json => {
