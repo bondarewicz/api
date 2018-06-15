@@ -6,10 +6,10 @@ const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const fetch = require('node-fetch');
 // 
-const { testVerbs, httpStatuses, testStatus } = require('./controllers');
-const { hello, uuid, ref, haiku, sprintName, hexColor, ip, userAgent } = require('./controllers');
-const { encode64, decode64 } = require('./controllers');
-const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./controllers');
+const { testVerbs, httpStatuses, testStatus } = require('./routes');
+const { hello, activity, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
+const { encode64, decode64 } = require('./routes');
+const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./routes');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -65,6 +65,7 @@ api.use(bodyParser.json());
  * hello
  */
 apiRoutes.get('/hello', hello);
+apiRoutes.get('/version', version);
 
 /**
  * Utilities

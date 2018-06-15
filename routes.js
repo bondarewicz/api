@@ -2,7 +2,7 @@ const allowed = require('./statuses.json').statuses;
 const helpers = require('./helpers.js');
 const haiku = require('./haiku.json');
 const uaParser = require('ua-parser-js');
-
+const fetch = require('node-fetch');
 const dotenv = require('dotenv');
 const mongo = require('mongodb').MongoClient;
 
@@ -68,6 +68,16 @@ module.exports = {
     }
 
     res.json(ref);
+  },
+  
+  version: function(req, res) {
+    fetch('https://api.github.com/repos/bondarewicz/com/commits', {
+      headers: { 'Authorization': process.env.GITHUB_TOKEN }
+    })
+    .then(res => res.json())
+    .then(json => {
+      res.json({ url: json[0].html_url, sha: json[0].sha.substr(0, 7) });
+    });
   },
   
   haiku: function(req, res) {
