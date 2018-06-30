@@ -5,6 +5,7 @@ const uaParser = require('ua-parser-js');
 const fetch = require('node-fetch');
 const dotenv = require('dotenv');
 const mongo = require('mongodb').MongoClient;
+const parseString = require('xml2js').parseString;
 
 dotenv.config();
 
@@ -53,6 +54,28 @@ module.exports = {
     const greet = dayNames[time.getDay()];
 
     res.json(`Happy ${greet}!`);
+  },
+  
+  contributions: function(req, res) {
+    fetch('https://github.com/users/bondarewicz/contributions', {
+      headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN }` }
+    })
+    .then(res => res.text())
+	   .then(body => {
+       
+       parseString(body, function (err, result) {
+         let len = result.svg.g[0].g.length;
+         let contributions = 0;
+         
+          for (var i = 0; i < len; i++) {
+            result.svg.g[0].g[i].rect.map(function(contr) {
+              contributions += parseInt(contr.$['data-count']);
+            });
+          }
+
+          res.json(`${contributions}`);
+        });
+     });
   },
   
   uuid: function(req, res) {

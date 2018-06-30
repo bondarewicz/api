@@ -7,7 +7,7 @@ const morgan = require('morgan');
 const fetch = require('node-fetch');
 // 
 const { testVerbs, httpStatuses, testStatus } = require('./routes');
-const { hello, activity, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
+const { hello, contributions, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
 const { encode64, decode64 } = require('./routes');
 const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./routes');
 // 
@@ -66,6 +66,7 @@ api.use(bodyParser.json());
  */
 apiRoutes.get('/hello', hello);
 apiRoutes.get('/version', version);
+apiRoutes.get('/contributions', contributions);
 
 /**
  * Utilities
