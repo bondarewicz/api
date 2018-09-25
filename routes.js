@@ -64,17 +64,10 @@ module.exports = {
 	   .then(body => {
        
        parseString(body, function (err, result) {
-         let len = result.svg.g[0].g.length;
-         let contributions = 0;
-         
-          for (var i = 0; i < len; i++) {
-            result.svg.g[0].g[i].rect.map(function(contr) {
-              contributions += parseInt(contr.$['data-count']);
-            });
-          }
-
-          res.json(`${contributions}`);
-        });
+         let contributions = result.div.div[0].h2[0]._.replace(/(\r\n\t|\n|\r\t)/gm,'').trim();
+         //
+         res.json(`${contributions}`);
+       });
      });
   },
   
