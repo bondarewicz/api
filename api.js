@@ -5,11 +5,15 @@ const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const fetch = require('node-fetch');
+const multer  = require('multer');
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
 // 
 const { testVerbs, httpStatuses, testStatus } = require('./routes');
 const { hello, contributions, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
 const { encode64, decode64 } = require('./routes');
 const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./routes');
+const { fileUpload } = require('./routes');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -109,6 +113,11 @@ apiRoutes.get('/anythings/:id?', getAnything);
 apiRoutes.put('/anythings/:id?', putAnything);
 apiRoutes.delete('/anythings/:id?', deleteAnything);
 apiRoutes.purge('/anythings', purgeAnything);
+
+/**
+ * file upload
+ */
+apiRoutes.post('/upload', upload.any(), fileUpload);
 
 /**
  * expose over v1 entrypoint

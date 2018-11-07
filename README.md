@@ -1,7 +1,10 @@
 [![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/2c19f5b3298aa50db70d)
 
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+
 ## Limits
 Rate limit is set per each IP to 1000 requests per 1h.
+autocannon -c100 localhost:8080/v1/uuid
 
 ## Sandbox
 `https://api.bondarewicz.com/v1/`
@@ -19,6 +22,7 @@ Rate limit is set per each IP to 1000 requests per 1h.
 - **[<code>GET</code> ua](https://github.com/bondarewicz/api/blob/master/docs/utility/GET_ua.md)**
 - **[<code>GET</code> encode64/:value](https://github.com/bondarewicz/api/blob/master/docs/utility/GET_encode64_value.md)**
 - **[<code>GET</code> decode64/:value](https://github.com/bondarewicz/api/blob/master/docs/utility/GET_decode64_value.md)**
+- **[<code>POST</code> upload](https://github.com/bondarewicz/api/blob/master/docs/utility/POST_upload.md)**
 
 #### HTTP verbs resources
 

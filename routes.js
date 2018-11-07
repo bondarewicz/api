@@ -290,5 +290,17 @@ module.exports = {
       storage = null;
       res.status(200).json(storage);
     }
+  },
+  
+  fileUpload: function(req, res) {
+    if(!req.files) {
+      res.status(400).json('missing files');
+    } else {
+      console.log(req.files);
+      const names = req.files.map(function(item) {
+        return item['originalname'];
+      });
+      res.status(200).json(names);
+    }
   }
 }
