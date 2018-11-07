@@ -9,7 +9,7 @@ const parseString = require('xml2js').parseString;
 
 dotenv.config();
 
-let storage = null;
+let storage = [];
 let db;
 
 let url = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_ENDPOINT}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}`
@@ -17,6 +17,21 @@ mongo.connect(url, (err, client) => {
   if (err) return console.log(err);
   db = client.db(process.env.MONGO_DB);
 });
+
+function* anythingsGenerator() {
+  
+  let index = 0;
+  while(storage[index]) {
+    
+    yield storage[index];
+    if (index > -1) {
+      storage.splice(index, 1);
+      console.log('is it?', storage);
+    }
+  }    
+}
+
+let anythings = anythingsGenerator();
 
 module.exports = {
   
@@ -222,7 +237,7 @@ module.exports = {
       
     } else {
     
-      storage = Object.assign({}, req.body);
+      storage.push(Object.assign({}, req.body));
       // entity.links = api.get('CRUD');
 
       res.status(201).json(storage);
@@ -244,7 +259,14 @@ module.exports = {
       });
       
     } else {
-      res.status(200).json(storage);
+      
+      let body = anythings.next();
+      
+      if(body.value) {
+        res.status(200).json(body.value);
+      } else {
+        res.status(404).json();
+      }
     }
     
   },
