@@ -50,6 +50,10 @@ autocannon -c100 localhost:8080/v1/uuid
 - **[<code>PUT</code> anythings/:id](https://github.com/bondarewicz/api/blob/master/docs/anythings/PUT_anythings_id.md)**
 - **[<code>DELETE</code> anythings/:id](https://github.com/bondarewicz/api/blob/master/docs/anythings/DELETE_anythings_id.md)**
 
+#### Replay resources
+- **[<code>GET</code> replay](https://github.com/bondarewicz/api/blob/master/docs/replay/GET_replay.md)**
+- **[<code>POST</code> replay](https://github.com/bondarewicz/api/blob/master/docs/replay/POST_replay.md)**
+
 ## Support on Beerpay
 Hey dude! Help me out for a couple of :beers:!
 
