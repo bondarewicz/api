@@ -14,6 +14,7 @@ const { hello, contributions, uuid, ref, haiku, sprintName, hexColor, ip, userAg
 const { encode64, decode64 } = require('./routes');
 const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./routes');
 const { fileUpload } = require('./routes');
+const { getReplay, postReplay} = require('./routes');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -118,6 +119,14 @@ apiRoutes.purge('/anythings', purgeAnything);
  * file upload
  */
 apiRoutes.post('/upload', upload.any(), fileUpload);
+
+/**
+ * replay
+ * create a sequence of POST requests 
+ * then GET exactly what you have POST'ed
+ */
+apiRoutes.post('/replay', postReplay);
+apiRoutes.get('/replay', getReplay);
 
 /**
  * expose over v1 entrypoint

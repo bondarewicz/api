@@ -9,7 +9,8 @@ const parseString = require('xml2js').parseString;
 
 dotenv.config();
 
-let storage = [];
+let storage = null;
+let replayStorage = [];
 let db;
 
 let url = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_ENDPOINT}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}`
@@ -18,20 +19,21 @@ mongo.connect(url, (err, client) => {
   db = client.db(process.env.MONGO_DB);
 });
 
-function* anythingsGenerator() {
+function* replayGenerator() {
   
   let index = 0;
-  while(storage[index]) {
-    
-    yield storage[index];
+  console.log('is it true? : ', replayStorage[index]);
+  while(replayStorage[index]) {
+    console.log('replayGenerator', replayStorage);
+    let temp = replayStorage[index];
     if (index > -1) {
-      storage.splice(index, 1);
-      console.log('is it?', storage);
+      replayStorage.splice(index, 1);
+      console.log('is it?', replayStorage);
     }
+    yield temp;
+    
   }    
 }
-
-let anythings = anythingsGenerator();
 
 module.exports = {
   
@@ -199,7 +201,7 @@ module.exports = {
   
   purgeAnything: function(req, res) {
     
-    storage = null;
+    storage = [];
     
     db.collection('anythings').remove({}, function(err, result){
       if (err) throw err;
@@ -237,7 +239,7 @@ module.exports = {
       
     } else {
     
-      storage.push(Object.assign({}, req.body));
+      storage = Object.assign({}, req.body);
       // entity.links = api.get('CRUD');
 
       res.status(201).json(storage);
@@ -259,14 +261,12 @@ module.exports = {
       });
       
     } else {
-      
-      let body = anythings.next();
-      
-      if(body.value) {
-        res.status(200).json(body.value);
+      if(storage) {
+        res.status(200).json(storage);  
       } else {
         res.status(404).json();
       }
+      
     }
     
   },
@@ -324,5 +324,21 @@ module.exports = {
       });
       res.status(200).json(names);
     }
+  },
+  getReplay: function(req, res) {
+    let replay = replayGenerator();
+    let body = replay.next();
+
+    if(body.value) {
+      res.status(200).json(body.value);
+    } else {
+      res.status(404).json();
+    }
+  },
+  postReplay: function(req, res) {
+    replayStorage.push(Object.assign({}, req.body));
+    // entity.links = api.get('CRUD');
+
+    res.status(201).json(replayStorage);
   }
 }
