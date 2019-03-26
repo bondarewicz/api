@@ -57,4 +57,4 @@ autocannon -c100 localhost:8080/v1/uuid
 ## Support on Beerpay
 Hey dude! Help me out for a couple of :beers:!
 
-[![Beerpay](https://beerpay.io/bondarewicz/api/badge.svg?style=beer-square)](https://beerpay.io/bondarewicz/api)  [![Beerpay](https://beerpay.io/bondarewicz/api/make-wish.svg?style=flat-square)](https://beerpay.io/bondarewicz/api?focus=wish)
+[![Beerpay](https://beerpay.io/bondarewicz/api/badge.svg?style=beer-square)](https://beerpay.io/bondarewicz/api)  [![Beerpay](https://beerpay.io/bondarewicz/api/make-wish.svg?style=flat-square)](https://beerpay.io/bondarewicz/api?focus=wish) [![Greenkeeper badge](https://badges.greenkeeper.io/bondarewicz/api.svg)](https://greenkeeper.io/)
