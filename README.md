@@ -35,12 +35,12 @@ autocannon -c100 localhost:8080/v1/uuid
 
 #### HTTP status code resources
 
-- **[<code>GET</code> statuses](https://github.com/bondarewicz/api/blob/master/docs/status/GET_statuses.md)**
-- **[<code>GET</code> statuses/:code](https://github.com/bondarewicz/api/blob/master/docs/status/GET_statuses_code.md)**
-- **[<code>POST</code> statuses/:code](https://github.com/bondarewicz/api/blob/master/docs/status/POST_statuses_code.md)**
-- **[<code>PUT</code> statuses/:code](https://github.com/bondarewicz/api/blob/master/docs/status/PUT_statuses_code.md)**
-- **[<code>PATCH</code> statuses/:code](https://github.com/bondarewicz/api/blob/master/docs/status/PATCH_statuses_code.md)**
-- **[<code>DELETE</code> statuses/:code](https://github.com/bondarewicz/api/blob/master/docs/status/DELETE_statuses_code.md)**
+- **[<code>GET</code> status](https://github.com/bondarewicz/api/blob/master/docs/status/GET_statuses.md)**
+- **[<code>GET</code> status/:code](https://github.com/bondarewicz/api/blob/master/docs/status/GET_statuses_code.md)**
+- **[<code>POST</code> status/:code](https://github.com/bondarewicz/api/blob/master/docs/status/POST_statuses_code.md)**
+- **[<code>PUT</code> status/:code](https://github.com/bondarewicz/api/blob/master/docs/status/PUT_statuses_code.md)**
+- **[<code>PATCH</code> status/:code](https://github.com/bondarewicz/api/blob/master/docs/status/PATCH_statuses_code.md)**
+- **[<code>DELETE</code> status/:code](https://github.com/bondarewicz/api/blob/master/docs/status/DELETE_statuses_code.md)**
 
 
 #### Anythings resources
