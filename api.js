@@ -99,12 +99,12 @@ apiRoutes.purge('/verbs', testVerbs);
 /**
  * HTTP status codes
  */
-apiRoutes.get('/statuses', httpStatuses);
-apiRoutes.get('/statuses/:code', testStatus);
-apiRoutes.post('/statuses/:code', testStatus);
-apiRoutes.put('/statuses/:code', testStatus);
-apiRoutes.patch('/statuses/:code', testStatus);
-apiRoutes.delete('/statuses/:code', testStatus);
+apiRoutes.get('/status', httpStatuses);
+apiRoutes.get('/status/:code', testStatus);
+apiRoutes.post('/status/:code', testStatus);
+apiRoutes.put('/status/:code', testStatus);
+apiRoutes.patch('/status/:code', testStatus);
+apiRoutes.delete('/status/:code', testStatus);
 
 /**
  * anything
