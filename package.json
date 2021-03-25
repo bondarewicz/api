@@ -29,7 +29,7 @@
     "morgan": "^1.9.1",
     "multer": "^1.4.2",
     "node-fetch": "^2.6.1",
-    "ua-parser-js": "^0.7.23",
+    "ua-parser-js": "^0.7.25",
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
