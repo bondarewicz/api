@@ -29,7 +29,7 @@ const options = {
     openapi: '3.0.0',
     info: {
       title: 'api.bondarewicz.com',
-      version: `v.${ver}`,
+      version: `1.0.0`,
     },
     servers: [
       {
