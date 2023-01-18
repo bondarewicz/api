@@ -12,7 +12,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const path = require('path');
 var os = require("os");
-var ver = require('./package.json').version;
+var ver = require('child_process').execSync('git rev-parse HEAD').toString().trim().substring(0, 7);
 // 
 const { testVerbs, httpStatuses, testStatus } = require('./routes');
 const { hello, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
@@ -29,7 +29,7 @@ const options = {
     openapi: '3.0.0',
     info: {
       title: 'api.bondarewicz.com',
-      version: '1.0.0',
+      version: `v.${ver}`,
     },
     servers: [
       {
