@@ -12,7 +12,6 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const path = require('path');
 var os = require("os");
-var ver = require('child_process').execSync('git rev-parse HEAD').toString().trim().substring(0, 7);
 // 
 const { testVerbs, httpStatuses, testStatus } = require('./routes');
 const { hello, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
