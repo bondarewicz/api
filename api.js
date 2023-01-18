@@ -8,9 +8,14 @@ const fetch = require('node-fetch');
 const multer  = require('multer');
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
+const path = require('path');
+var os = require("os");
+var ver = require('./package.json').version;
 // 
 const { testVerbs, httpStatuses, testStatus } = require('./routes');
-const { hello, contributions, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
+const { hello, uuid, ref, haiku, sprintName, hexColor, ip, userAgent, version } = require('./routes');
 const { encode64, decode64 } = require('./routes');
 const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./routes');
 const { fileUpload } = require('./routes');
@@ -19,13 +24,38 @@ const { getReplay, postReplay} = require('./routes');
 const apiRoutes = express.Router();
 const api = express();
 
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'api.bondarewicz.com',
+      version: '1.0.0',
+    },
+    servers: [
+      {
+        url: 'https://api.bondarewicz.com/v1',
+        description: 'prod',
+      },
+      {
+        url: 'http://localhost:8080/v1',
+        description: 'dev',
+      },
+    ],
+    basePath: '/v1/',
+  },
+  apis: ['./api.js'], // files containing annotations as above
+};
+
+const swaggerSpec = swaggerJsdoc(options);
+
 /**
  * middleware
  */
 let customHeaders = (req, res, next) => {
   
   // TODO links as per http://jsonapi.org/
-  res.setHeader('Content-Type', 'application/vnd.api+json');
+  // res.setHeader('Content-Type', 'application/vnd.api+json');
+
   
   // cors
   res.header("Access-Control-Allow-Origin", "*");
@@ -66,24 +96,109 @@ api.use(morgan('dev'));
 api.use(bodyParser.urlencoded({extended: true}));
 api.use(bodyParser.json());
 
-/**
- * hello
- */
-apiRoutes.get('/hello', hello);
-apiRoutes.get('/version', version);
-apiRoutes.get('/contributions', contributions);
+apiRoutes.use('/', swaggerUi.serve);
+apiRoutes.get('/', swaggerUi.setup(swaggerSpec));
 
 /**
- * Utilities
+ * @swagger
+ * /hello:
+ *   get:
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Returns a greeting
+ */
+apiRoutes.get('/hello', hello);
+
+/**
+ * @swagger
+ * /version:
+ *   get:
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Returns version of latest website
+ */
+apiRoutes.get('/version', version);
+
+/**
+ * @swagger
+ * /uuid:
+ *   get:
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Returns new uuid
  */
 apiRoutes.get('/uuid', uuid);
 apiRoutes.get('/ref', ref);
 apiRoutes.get('/haiku', haiku);
 apiRoutes.get('/sprint', sprintName);
 apiRoutes.get('/color', hexColor);
+
+/**
+ * @swagger
+ * /ip:
+ *   get:
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Returns your ip
+ */
 apiRoutes.get('/ip', ip);
+
+/**
+ * @swagger
+ * /ua:
+ *   get:
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Returns your user agent
+ */
 apiRoutes.get('/ua', userAgent);
+
+/**
+ * @swagger
+ * /encode64/{value}:
+ *   get:
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - in: path
+ *         name: value
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The string value to be encoded
+ *     responses:
+ *       200:
+ *         description: Returns your base64 encoded result
+ */
 apiRoutes.get('/encode64/:value', encode64);
+
+/**
+ * @swagger
+ * /decode64/{value}:
+ *   get:
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - in: path
+ *         name: value
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The string base64 value to be decoded
+ *     responses:
+ *       200:
+ *         description: Returns your decoded result
+ */
 apiRoutes.get('/decode64/:value', decode64);
 
 /**

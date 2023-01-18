@@ -1,0 +1,34 @@
+{
+  "name": "anythings api",
+  "description": "",
+  "repository": "https://github.com/bondarewicz/api",
+  "logo": "",
+  "keywords": ["node", "express", "mongodb"],
+  "buildpacks": [{
+      "url": "heroku/nodejs"
+  }],
+  "addons": [
+    "mongolab",
+    {
+      "plan": "mongolab:sandbox",
+      "as": "MONGO"
+    }
+  ],
+  "env": {
+    "MONGO_DB": {
+      "value": "your mongodb db name"
+    },
+    "MONGO_ENDPOINT": {
+      "value": "your xxx.mlab.com"
+    },
+    "MONGO_PASSWORD": {
+      "value": "your mongodb password"
+    },
+    "MONGO_PORT": {
+      "value": "your mongodb port"
+    },
+    "MONGO_USERNAME": {
+      "value": "your mongodb username"
+    }
+  }
+}

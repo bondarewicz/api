@@ -13,7 +13,7 @@ let storage = null;
 let replayStorage = [];
 let db;
 
-let url = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_ENDPOINT}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}`
+let url = `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_ENDPOINT}/${process.env.MONGO_DB}`
 mongo.connect(url, (err, client) => {
   if (err) return console.log(err);
   db = client.db(process.env.MONGO_DB);
@@ -73,21 +73,6 @@ module.exports = {
     res.json(`Happy ${greet}!`);
   },
   
-  contributions: function(req, res) {
-    fetch('https://github.com/users/bondarewicz/contributions', {
-      headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN }` }
-    })
-    .then(res => res.text())
-	   .then(body => {
-       
-       parseString(body, function (err, result) {
-         let contributions = result.div.div[0].h2[0]._.replace(/(\r\n\t|\n|\r\t)/gm,'').trim();
-         //
-         res.json(`${contributions}`);
-       });
-     });
-  },
-  
   uuid: function(req, res) {
     res.json(helpers.uuid());
   },
@@ -105,7 +90,10 @@ module.exports = {
   
   version: function(req, res) {
     fetch('https://api.github.com/repos/bondarewicz/com/commits', {
-      headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN }` }
+      headers: { 
+        'Authorization': `token ${process.env.GITHUB_TOKEN }`,
+        'X-GitHub-Api-Version': '2022-11-28'
+       }
     })
     .then(res => res.json())
     .then(json => {
