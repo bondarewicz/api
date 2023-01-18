@@ -194,7 +194,7 @@ apiRoutes.get('/encode64/:value', encode64);
  *         schema:
  *           type: string
  *         required: true
- *         description: The string base64 value to be decoded
+ *         description: The string value to be decoded
  *     responses:
  *       200:
  *         description: Returns your decoded result
