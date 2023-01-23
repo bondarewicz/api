@@ -19,6 +19,7 @@ const { encode64, decode64 } = require('./routes');
 const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } = require('./routes');
 const { fileUpload } = require('./routes');
 const { getReplay, postReplay} = require('./routes');
+const { postDelay } = require('./routes');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -241,6 +242,12 @@ apiRoutes.post('/upload', upload.any(), fileUpload);
  */
 apiRoutes.post('/replay', postReplay);
 apiRoutes.get('/replay', getReplay);
+
+/**
+ * delay
+ * add's intentional delay to a response
+ */
+apiRoutes.post('/delay/:value', postDelay);
 
 /**
  * expose over v1 entrypoint

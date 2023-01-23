@@ -328,5 +328,13 @@ module.exports = {
     // entity.links = api.get('CRUD');
 
     res.status(201).json(replayStorage);
+  },
+
+  postDelay: function(req, res) {
+    var timeout = parseInt(req.params.value);
+
+    setTimeout((() => {
+      res.status(200).json();
+    }), timeout);
   }
 }
