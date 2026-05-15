@@ -20,7 +20,7 @@ const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } 
 const { fileUpload } = require('./routes');
 const { getReplay, postReplay} = require('./routes');
 const { postDelay } = require('./routes');
-const { geoip, qrCode, visits, weather } = require('./routes');
+const { qrCode, visits, weather } = require('./routes');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -189,26 +189,13 @@ apiRoutes.get('/color', hexColor);
  * /ip:
  *   get:
  *     tags: [Utility]
- *     summary: Caller's IP address
+ *     summary: Caller's IP enriched with city, country, timezone, and ISP
+ *     description: Best-effort geo lookup via ip-api.com. Falls back to just `{ ip }` if the lookup fails (e.g. private/reserved ranges).
  *     responses:
  *       200:
- *         description: The client's IP
+ *         description: IP plus geo + network metadata for the caller
  */
 apiRoutes.get('/ip', ip);
-
-/**
- * @swagger
- * /geoip:
- *   get:
- *     tags: [Utility]
- *     summary: Caller's IP enriched with city, country, timezone, and ISP
- *     responses:
- *       200:
- *         description: Geo + network metadata for the caller's IP (upstream ip-api.com)
- *       502:
- *         description: Upstream geo lookup failed
- */
-apiRoutes.get('/geoip', geoip);
 
 /**
  * @swagger

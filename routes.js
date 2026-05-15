@@ -132,34 +132,28 @@ module.exports = {
     res.json(`#${hex}`);
   },
   
-  ip: function(req, res) {
-    res.json(clientIp(req));
-  },
-
-  geoip: async function(req, res) {
+  ip: async function(req, res) {
     const ip = clientIp(req);
     try {
       const upstream = await fetch(
-        `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,regionName,city,zip,timezone,isp,org,query`
+        `http://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city,zip,timezone,isp,org,query`
       );
       const data = await upstream.json();
-      if (data.status !== 'success') {
-        return res.status(502).json({ error: data.message || 'geoip lookup failed', ip });
+      if (data.status === 'success') {
+        return res.json({
+          ip: data.query,
+          city: data.city,
+          region: data.regionName,
+          country: data.country,
+          countryCode: data.countryCode,
+          zip: data.zip,
+          timezone: data.timezone,
+          isp: data.isp,
+          org: data.org,
+        });
       }
-      res.json({
-        ip: data.query,
-        city: data.city,
-        region: data.regionName,
-        country: data.country,
-        countryCode: data.countryCode,
-        zip: data.zip,
-        timezone: data.timezone,
-        isp: data.isp,
-        org: data.org,
-      });
-    } catch (e) {
-      res.status(502).json({ error: e.message, ip });
-    }
+    } catch (e) { /* fall through to bare IP */ }
+    res.json({ ip });
   },
 
   qrCode: function(req, res) {
