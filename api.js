@@ -318,6 +318,9 @@ apiRoutes.get('/decode64/:value', decode64);
  *   delete:
  *     tags: [Verbs]
  *     responses: { 200: { description: OK } }
+ *   purge:
+ *     tags: [Verbs]
+ *     responses: { 200: { description: OK } }
  */
 apiRoutes.get('/verbs', testVerbs);
 apiRoutes.post('/verbs', testVerbs);
