@@ -5,12 +5,21 @@ const uaParser = require('ua-parser-js');
 const fetch = require('node-fetch');
 const dotenv = require('dotenv');
 const parseString = require('xml2js').parseString;
+const qrcodeTerminal = require('qrcode-terminal');
 
 dotenv.config();
 
 let storage = null;
 let replayStorage = [];
+let visitCount = 0;
 const anythings = new Map();
+
+function clientIp(req) {
+  let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
+  ip = ip.split(',')[0].trim();
+  ip = ip.split(':').pop();
+  return (ip === '1') ? '127.0.0.1' : ip;
+}
 
 function* replayGenerator() {
   
@@ -123,13 +132,67 @@ module.exports = {
     res.json(`#${hex}`);
   },
   
-  // TODO GET https://api.ipify.org/?format=json
   ip: function(req, res) {
-    
-    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    ip = ip.split(':').pop();
-    ip = (ip === '1') ? '127.0.0.1' : ip;
-    res.json(ip);
+    res.json(clientIp(req));
+  },
+
+  geoip: async function(req, res) {
+    const ip = clientIp(req);
+    try {
+      const upstream = await fetch(
+        `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,regionName,city,zip,timezone,isp,org,query`
+      );
+      const data = await upstream.json();
+      if (data.status !== 'success') {
+        return res.status(502).json({ error: data.message || 'geoip lookup failed', ip });
+      }
+      res.json({
+        ip: data.query,
+        city: data.city,
+        region: data.regionName,
+        country: data.country,
+        countryCode: data.countryCode,
+        zip: data.zip,
+        timezone: data.timezone,
+        isp: data.isp,
+        org: data.org,
+      });
+    } catch (e) {
+      res.status(502).json({ error: e.message, ip });
+    }
+  },
+
+  qrCode: function(req, res) {
+    const text = req.params.text;
+    if (!text) return res.status(400).json({ error: 'text is required' });
+    qrcodeTerminal.generate(text, { small: true }, (qr) => {
+      res.type('text/plain').send(qr);
+    });
+  },
+
+  visits: function(req, res) {
+    visitCount += 1;
+    res.json({ count: visitCount });
+  },
+
+  weather: async function(req, res) {
+    const ip = clientIp(req);
+    let location = '';
+    try {
+      const geo = await fetch(`http://ip-api.com/json/${ip}?fields=status,city`);
+      const data = await geo.json();
+      if (data.status === 'success' && data.city) location = data.city;
+    } catch (e) { /* fall through to wttr.in's own geo */ }
+    try {
+      const url = location
+        ? `https://wttr.in/${encodeURIComponent(location)}?format=3`
+        : `https://wttr.in/?format=3`;
+      const upstream = await fetch(url, { headers: { 'User-Agent': 'curl/7.79' } });
+      const text = (await upstream.text()).trim();
+      res.type('text/plain').send(text || 'weather unavailable');
+    } catch (e) {
+      res.status(502).json({ error: e.message });
+    }
   },
   
   userAgent: function(req, res) {

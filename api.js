@@ -20,6 +20,7 @@ const { postAnything, getAnything, putAnything, deleteAnything, purgeAnything } 
 const { fileUpload } = require('./routes');
 const { getReplay, postReplay} = require('./routes');
 const { postDelay } = require('./routes');
+const { geoip, qrCode, visits, weather } = require('./routes');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -194,6 +195,66 @@ apiRoutes.get('/color', hexColor);
  *         description: The client's IP
  */
 apiRoutes.get('/ip', ip);
+
+/**
+ * @swagger
+ * /geoip:
+ *   get:
+ *     tags: [Utility]
+ *     summary: Caller's IP enriched with city, country, timezone, and ISP
+ *     responses:
+ *       200:
+ *         description: Geo + network metadata for the caller's IP (upstream ip-api.com)
+ *       502:
+ *         description: Upstream geo lookup failed
+ */
+apiRoutes.get('/geoip', geoip);
+
+/**
+ * @swagger
+ * /weather:
+ *   get:
+ *     tags: [Utility]
+ *     summary: One-line current weather for the caller's location
+ *     description: Resolves caller IP to city, then proxies wttr.in in compact format.
+ *     responses:
+ *       200:
+ *         description: Plain-text weather string (e.g. "Warsaw, +3°C ☁️")
+ *       502:
+ *         description: Upstream weather lookup failed
+ */
+apiRoutes.get('/weather', weather);
+
+/**
+ * @swagger
+ * /qr/{text}:
+ *   get:
+ *     tags: [Utility]
+ *     summary: Render text as an ASCII QR code
+ *     parameters:
+ *       - in: path
+ *         name: text
+ *         required: true
+ *         schema: { type: string }
+ *         description: Text to encode in the QR code
+ *     responses:
+ *       200:
+ *         description: Plain-text QR code rendered with unicode block characters
+ */
+apiRoutes.get('/qr/:text', qrCode);
+
+/**
+ * @swagger
+ * /visits:
+ *   get:
+ *     tags: [Utility]
+ *     summary: Increment the global visit counter and return its new value
+ *     description: Counter is in-memory and resets when the process restarts.
+ *     responses:
+ *       200:
+ *         description: Object with the new visit count
+ */
+apiRoutes.get('/visits', visits);
 
 /**
  * @swagger
