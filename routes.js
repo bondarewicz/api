@@ -90,17 +90,25 @@ module.exports = {
     res.json(ref);
   },
   
-  version: function(req, res) {
-    fetch('https://api.github.com/repos/bondarewicz/com/commits', {
-      headers: { 
-        'Authorization': `token ${process.env.GITHUB_TOKEN }`,
-        'X-GitHub-Api-Version': '2022-11-28'
-       }
-    })
-    .then(res => res.json())
-    .then(json => {
-      res.json({ url: json[0].html_url, sha: json[0].sha.substr(0, 7) });
-    });
+  version: async function(req, res) {
+    const headers = {
+      'User-Agent': 'api.bondarewicz.com',
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+    if (process.env.GITHUB_TOKEN) headers.Authorization = `token ${process.env.GITHUB_TOKEN}`;
+    try {
+      const upstream = await fetch('https://api.github.com/repos/bondarewicz/com/commits?per_page=1', { headers });
+      if (!upstream.ok) {
+        return res.status(502).json({ error: `github responded ${upstream.status}` });
+      }
+      const json = await upstream.json();
+      const commit = Array.isArray(json) ? json[0] : null;
+      if (!commit) return res.status(502).json({ error: 'unexpected github response' });
+      res.json({ url: commit.html_url, sha: commit.sha.substr(0, 7) });
+    } catch (e) {
+      res.status(502).json({ error: e.message });
+    }
   },
   
   haiku: function(req, res) {
