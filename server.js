@@ -1,8 +1,16 @@
 const dotenv = require('dotenv');
-const api = require('./api');
 dotenv.config();
+const api = require('./api');
+const { ready: redisReady } = require('./redis');
 const port = process.env.PORT || 80;
 
-api.listen(port, () => {
-  console.log(`api listening on port ${port}`);
-});
+redisReady
+  .then(() => {
+    api.listen(port, () => {
+      console.log(`api listening on port ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to connect to Redis', err);
+    process.exit(1);
+  });

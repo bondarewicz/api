@@ -9,9 +9,10 @@ const qrcodeTerminal = require('qrcode-terminal');
 
 dotenv.config();
 
+const { client: redis } = require('./redis');
+
 let storage = null;
 let replayStorage = [];
-let visitCount = 0;
 const anythings = new Map();
 
 function clientIp(req) {
@@ -171,9 +172,14 @@ module.exports = {
     });
   },
 
-  visits: function(req, res) {
-    visitCount += 1;
-    res.json({ count: visitCount });
+  visits: async function(req, res) {
+    try {
+      const count = await redis.incr('visits:count');
+      res.json({ count });
+    } catch (err) {
+      console.error('visits redis error', err);
+      res.status(500).json({ error: 'visit counter unavailable' });
+    }
   },
 
   weather: async function(req, res) {
