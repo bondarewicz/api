@@ -4,20 +4,13 @@ const haiku = require('./haiku.json');
 const uaParser = require('ua-parser-js');
 const fetch = require('node-fetch');
 const dotenv = require('dotenv');
-const mongo = require('mongodb').MongoClient;
 const parseString = require('xml2js').parseString;
 
 dotenv.config();
 
 let storage = null;
 let replayStorage = [];
-let db;
-
-let url = `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_ENDPOINT}/${process.env.MONGO_DB}`
-mongo.connect(url, (err, client) => {
-  if (err) return console.log(err);
-  db = client.db(process.env.MONGO_DB);
-});
+const anythings = new Map();
 
 function* replayGenerator() {
   
@@ -188,115 +181,81 @@ module.exports = {
   },
   
   purgeAnything: function(req, res) {
-    
     storage = [];
-    
-    db.collection('anythings').remove({}, function(err, result){
-      if (err) throw err;
-      res.status(410).json();
-    });
+    anythings.clear();
+    res.status(410).json();
   },
-  
-  postAnything: function(req, res) {
-    
-    let hostname = process.env.API_HOSTNAME || req.protocol + '://' + req.get('host') + req.originalUrl;
-    let anything = null;
-    
-    if(req.params.id) {
-      
-      db.collection('anythings').find({ref: req.params.id}).limit(1).toArray((err, anythings) => {
-        if ( anythings.length > 0) {
-          
-          const error = {
-            'status': '409',
-            'title':  `Anything with the same id already exists.`,
-            'detail':  `Use DELETE ${hostname} first then try again or simply use PUT ${hostname} instead.`
-          };
-          
-          res.status(409).json(error);
-          
-        } else {
-          
-          db.collection('anythings').insertOne({ 'ref': req.params.id, 'body': req.body }, (err, recs) => {
-             if(err) throw err;
-             res.status(201).json(recs.ops[0].body);
-          });
-          
-        }
-      });
-      
-    } else {
-    
-      storage = Object.assign({}, req.body);
-      // entity.links = api.get('CRUD');
 
+  postAnything: function(req, res) {
+
+    let hostname = process.env.API_HOSTNAME || req.protocol + '://' + req.get('host') + req.originalUrl;
+
+    if(req.params.id) {
+
+      if(anythings.has(req.params.id)) {
+        const error = {
+          'status': '409',
+          'title':  `Anything with the same id already exists.`,
+          'detail':  `Use DELETE ${hostname} first then try again or simply use PUT ${hostname} instead.`
+        };
+        res.status(409).json(error);
+      } else {
+        anythings.set(req.params.id, req.body);
+        res.status(201).json(req.body);
+      }
+
+    } else {
+
+      storage = Object.assign({}, req.body);
       res.status(201).json(storage);
     }
   },
-  
+
   getAnything: function(req, res) {
-    
+
     if(req.params.id) {
-      
-      db.collection('anythings').find({ 'ref': req.params.id }).limit(1).toArray((err, anythings) => {
-        if(err) throw err;
-        
-        if(anythings.length > 0) {
-          res.json(anythings[0].body);
-        } else {
-          res.status(404).json();
-        } 
-      });
-      
-    } else {
-      if(storage) {
-        res.status(200).json(storage);  
+
+      if(anythings.has(req.params.id)) {
+        res.json(anythings.get(req.params.id));
       } else {
         res.status(404).json();
       }
-      
-    }
-    
-  },
-  
-  putAnything: function(req, res) {
-    
-    if(req.params.id) {
-      
-      db.collection('anythings').updateOne({'ref': req.params.id}, {$set: {'body': req.body}}, { upsert: true }, (err, anythings) => {
-        if(err) throw err;
-          
-        if(anythings.modifiedCount) {
-          res.status(202).json();
-        } else {
-          res.status(304).json();
-        }
-      });
-      
+
     } else {
-      
+      if(storage) {
+        res.status(200).json(storage);
+      } else {
+        res.status(404).json();
+      }
+    }
+  },
+
+  putAnything: function(req, res) {
+
+    if(req.params.id) {
+
+      const existed = anythings.has(req.params.id);
+      anythings.set(req.params.id, req.body);
+      res.status(existed ? 202 : 201).json();
+
+    } else {
+
       storage = Object.assign({}, req.body);
-      // entity.links = api.get('CRUD');
       res.status(202).json(storage);
     }
-    
   },
-  
+
   deleteAnything: function(req, res) {
     if(req.params.id) {
-      
-      db.collection('anythings').deleteOne({'ref': req.params.id}, (err, anythings) => {
-          if(err) throw err;
-          
-          if(anythings.deletedCount) {
-            res.status(204).json();
-          } else {
-            res.status(404).json();
-          }
-      });
-      
+
+      if(anythings.delete(req.params.id)) {
+        res.status(204).json();
+      } else {
+        res.status(404).json();
+      }
+
     } else {
-      
+
       storage = null;
       res.status(200).json(storage);
     }
