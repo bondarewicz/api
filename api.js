@@ -214,10 +214,17 @@ apiRoutes.get('/weather', weather);
 
 /**
  * @swagger
+ * /qr:
+ *   get:
+ *     tags: [Utility]
+ *     summary: ASCII QR code for https://bondarewicz.com/
+ *     responses:
+ *       200:
+ *         description: Plain-text QR code rendered with unicode block characters
  * /qr/{text}:
  *   get:
  *     tags: [Utility]
- *     summary: Render text as an ASCII QR code
+ *     summary: ASCII QR code for arbitrary text
  *     parameters:
  *       - in: path
  *         name: text
@@ -228,7 +235,7 @@ apiRoutes.get('/weather', weather);
  *       200:
  *         description: Plain-text QR code rendered with unicode block characters
  */
-apiRoutes.get('/qr/:text', qrCode);
+apiRoutes.get('/qr/:text?', qrCode);
 
 /**
  * @swagger

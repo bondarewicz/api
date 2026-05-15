@@ -157,8 +157,7 @@ module.exports = {
   },
 
   qrCode: function(req, res) {
-    const text = req.params.text;
-    if (!text) return res.status(400).json({ error: 'text is required' });
+    const text = req.params.text || 'https://bondarewicz.com/';
     qrcodeTerminal.generate(text, { small: true }, (qr) => {
       res.type('text/plain').send(qr);
     });
