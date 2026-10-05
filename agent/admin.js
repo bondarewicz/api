@@ -122,10 +122,36 @@ function device(ua) {
   return [browser, os].filter(Boolean).join(' on ') || ua.slice(0, 60);
 }
 
+/* ───── priority: how much a conversation is worth Łukasz's time ───── */
+
+const FREE_MAIL = /@(gmail|googlemail|outlook|hotmail|live|yahoo|icloud|me|proton|protonmail|aol|gmx|wp|o2|onet|interia)\./i;
+const WANTS_CONTACT = /\b(follow ?-?up|foll?up|get in touch|contact (me|him)|reach (me|out)|call (me|him)|talk to him|speak (to|with) him|meet)/i;
+const ROLE_TALK = /\b(hiring|hire|role|position|recruit|vacanc|contract|freelance|project|budget|rate|salary|start date|interview|opportunit)/i;
+
+function priority(c) {
+  if (flagged(c)) return { level: 'Noise', score: 0, reasons: ['flagged as off-topic or abusive'] };
+  const v = c.visitor || {};
+  const asked = questions(c);
+  const reasons = [];
+  let score = 0;
+  if (v.email && !FREE_MAIL.test(v.email)) { score += 40; reasons.push('left a work email'); }
+  else if (v.email) { score += 25; reasons.push('left contact details'); }
+  if (c.messages.some((m) => m.fit && (m.fit.strong.length || m.fit.discuss.length))) { score += 30; reasons.push('pasted a job description'); }
+  if (asked.some((m) => WANTS_CONTACT.test(m.content))) { score += 25; reasons.push('asked to be contacted'); }
+  if (asked.some((m) => ROLE_TALK.test(m.content))) { score += 15; reasons.push('talked about a role or project'); }
+  if (v.company) { score += 10; reasons.push(`named a company (${v.company})`); }
+  if (asked.length >= 3) { score += 10; reasons.push(`${asked.length} questions`); }
+  if (/linkedin\./i.test(c.referrer || '')) { score += 5; reasons.push('came from LinkedIn'); }
+  const level = score >= 50 ? 'High' : score >= 20 ? 'Medium' : 'Low';
+  return { level, score, reasons: reasons.length ? reasons : ['a quick look, nothing more yet'] };
+}
+
+const cost = (c) => `$${(c.costUsd || 0).toFixed(3)}`;
+
 function badges(c) {
-  const out = [];
+  const p = priority(c);
+  const out = [`<span class="badge p-${p.level.toLowerCase()}">${p.level}</span>`];
   if (isLead(c)) out.push('<span class="badge lead">Lead</span>');
-  if (flagged(c)) out.push('<span class="badge flag">Flagged</span>');
   return out.join(' ');
 }
 
@@ -147,7 +173,7 @@ main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
 h1{font-size:24px;margin:0}
 .muted{color:var(--muted)}
 .sub{color:var(--muted);font-size:13px;margin-top:2px}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:20px 0}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .stat b{display:block;font-size:24px;line-height:1.2}
 .stat span{color:var(--muted);font-size:13px}
@@ -160,6 +186,12 @@ h1{font-size:24px;margin:0}
 .row .q{overflow-wrap:anywhere}
 .row .when{text-align:right}
 .badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;vertical-align:1px}
+.badge.p-high{background:#1F6B5C;color:#fff}
+.badge.p-medium{background:#FBEBD7;color:#9A4A00}
+.badge.p-low{background:#ECEAE4;color:#5B6372}
+.badge.p-noise{background:#F3E1DF;color:#9B2C22}
+.why{font-size:13px;color:var(--teal-deep);margin-top:4px}
+.reasons{margin:8px 0;padding-left:18px;font-size:14px}
 .badge.lead{background:var(--teal-soft);color:var(--teal-deep)}
 .badge.flag{background:var(--warn-soft);color:var(--warn)}
 .empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:32px;text-align:center;color:var(--muted)}
@@ -193,12 +225,19 @@ aside dt{color:var(--muted)}aside dd{margin:0;overflow-wrap:anywhere}
 .switch button.kill{background:#B42318;color:#fff}
 .switch button.on{background:var(--teal-deep);color:#fff}
 @media (max-width:900px){.detail{grid-template-columns:minmax(0,1fr)}aside{order:-1}}
+@media (max-width:1000px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr);gap:6px}.row .when{text-align:left}.msg{max-width:100%}}
 </style></head><body>
 <header class="top"><div class="in"><a href="${BASE}"><span class="dot"></span>bondarewicz.com · visitor conversations</a><span class="tz">times in ${esc(TZ)}</span></div></header>
 <main><!--email_off-->${body}<!--/email_off--></main></body></html>`; // email_off stops Cloudflare masking addresses
 
 /* ───── list ───── */
+
+function costPerLead(convs) {
+  const leads = convs.filter(isLead).length;
+  const spent = convs.reduce((n, c) => n + (c.costUsd || 0), 0);
+  return leads ? `$${(spent / leads).toFixed(2)}` : '–';
+}
 
 async function stats(convs) {
   const now = Date.now();
@@ -209,14 +248,17 @@ async function stats(convs) {
 <div class="stat"><b>${since(86400000)}</b><span>conversations, last 24 h</span></div>
 <div class="stat"><b>${since(7 * 86400000)}</b><span>conversations, last 7 days</span></div>
 <div class="stat"><b>${convs.filter(isLead).length}</b><span>leads (left contact details)</span></div>
+<div class="stat"><b>${costPerLead(convs)}</b><span>Claude cost per lead, all time</span></div>
 <div class="stat"><b>$${spent.toFixed(2)}</b><span>spent today of $${budget.toFixed(2)} budget</span></div>
 </div>`;
 }
 
 async function list(req, res) {
   const all = await store.list(500);
-  const filter = ['leads', 'flagged'].includes(req.query.filter) ? req.query.filter : 'all';
-  const shown = filter === 'leads' ? all.filter(isLead) : filter === 'flagged' ? all.filter(flagged) : all;
+  const filter = ['top', 'leads', 'flagged'].includes(req.query.filter) ? req.query.filter : 'all';
+  const shown = filter === 'top'
+    ? all.filter((c) => priority(c).score >= 20).sort((a, b) => priority(b).score - priority(a).score)
+    : filter === 'leads' ? all.filter(isLead) : filter === 'flagged' ? all.filter(flagged) : all;
   const tab = (key, label, n) => `<a class="${filter === key ? 'on' : ''}" href="${BASE}${key === 'all' ? '' : `?filter=${key}`}">${label} · ${n}</a>`;
 
   const rows = shown.map((c) => {
@@ -225,10 +267,10 @@ async function list(req, res) {
     const who = v.name || v.email || 'Anonymous visitor';
     const contact = [v.email && v.name ? v.email : '', v.company].filter(Boolean).join(' · ');
     return `<a class="row" href="${BASE}/c/${esc(c.id)}">
-<div><strong>${esc(who)}</strong> ${badges(c)}<div class="sub">${esc(contact)}</div></div>
+<div><strong>${esc(who)}</strong> ${badges(c)}<div class="sub">${esc(contact)}</div><div class="why">${esc(priority(c).reasons.join(', '))}</div></div>
 <div class="q">“${esc(qs[0] ? qs[0].content.slice(0, 160) : '')}”<div class="sub">${plural(qs.length, 'question')}</div></div>
 <div>${esc(place(c))}<div class="sub">${esc([c.geo && c.geo.org, `via ${source(c)}`].filter(Boolean).join(' · '))}</div></div>
-<div class="when">${esc(ago(c.updatedAt))}<div class="sub">${esc(localTime(c.updatedAt))}</div></div>
+<div class="when">${esc(ago(c.updatedAt))}<div class="sub">${esc(localTime(c.updatedAt))}</div><div class="sub">cost ${cost(c)}</div></div>
 </a>`;
   }).join('');
 
@@ -236,7 +278,7 @@ async function list(req, res) {
 <div class="sub">Everything visitors asked the site agent, newest first. Kept ${esc(process.env.AGENT_RETENTION_DAYS || '180')} days.</div>
 ${await switchPanel()}
 ${await stats(all)}
-<nav class="tabs">${tab('all', 'All', all.length)}${tab('leads', 'Leads', all.filter(isLead).length)}${tab('flagged', 'Flagged', all.filter(flagged).length)}</nav>
+<nav class="tabs">${tab('top', 'Top leads', all.filter((c) => priority(c).score >= 20).length)}${tab('all', 'All', all.length)}${tab('leads', 'Leads', all.filter(isLead).length)}${tab('flagged', 'Flagged', all.filter(flagged).length)}</nav>
 <div class="list">${rows || `<div class="empty">${filter === 'all' ? 'No conversations yet.' : 'Nothing here yet.'}</div>`}</div>`));
 }
 
@@ -282,6 +324,7 @@ ${v.email ? `<div class="person">${esc(v.name || v.email)}</div><div class="sub"
 ${v.note ? `<p style="margin:10px 0 0">${esc(v.note)}</p>` : ''}
 <a class="btn" href="mailto:${esc(v.email)}?subject=${replySubject}">Reply by email</a>` : '<div class="muted">Didn\'t leave contact details.</div>'}
 </div>
+<div class="card"><h2>Priority</h2><div class="person">${badges(c)}</div><ul class="reasons">${priority(c).reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul><div class="sub">Claude cost for this conversation: ${cost(c)}</div></div>
 <div class="card"><h2>Where</h2>${dl([['Location', [g.city, g.region, g.countryName || g.country].filter(Boolean).join(', ')], ['Network', g.org], ['IP', c.ip], ['Timezone', c.timezone], ['Language', c.language]])}</div>
 <div class="card"><h2>How they arrived</h2>${dl([['Source', source(c)], ['Referrer', c.referrer], ['Landing page', c.landing], ['First asked', firstQ ? localTime(firstQ.at) : '']])}</div>
 <div class="card"><h2>Device</h2>${dl([['Browser', device(c.userAgent)], ['Screen', c.screen]])}</div>
