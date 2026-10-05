@@ -203,5 +203,8 @@
       "project": "forklift",
       "proof": "A single .NET Aspire command brings up Postgres, Mongo, Redis, RabbitMQ, EventStoreDB and Unleash, each with its UI."
     }
+  ],
+  "careerNotes": [
+    "ParcelVision was acquired by Parcelhero. From April 2024 Łukasz continued on the same platform and with the same team as Technical Lead, so 2013 to today is one continuous stretch of about 13 years on that platform. Someone saying '13 years at Parcelhero' is describing this correctly."
   ]
 }

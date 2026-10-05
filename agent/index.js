@@ -116,7 +116,7 @@ async function agentChat(req, res) {
     // tell the model where the conversation stands, so it asks who the visitor is early and only once
     const known = await store.visitorKnown(body.conversationId, ip);
     const visitorTurn = messages.filter((m) => m.role === 'user').length;
-    const state = `\n\nConversation state: this is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}.`;
+    const state = `\n\nConversation state: today is ${new Date().toISOString().slice(0, 10)}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}.`;
     const turnMessages = messages.map((m) => ({ role: m.role, content: m.content }));
 
     const picked = await pickProvider(system + state, turnMessages);
@@ -139,6 +139,8 @@ async function agentChat(req, res) {
     console.log(`agent: ${result.model} in=${result.usage.input} out=${result.usage.output} $${result.costUsd.toFixed(5)}`);
 
     const reply = normalise(result.raw, sourceIds);
+    // house style: no em dashes, whatever the model does
+    reply.answer = reply.answer.replace(/\s*—\s*/g, ', ');
     const genuine = reply.intent === 'genuine';
     if (!genuine) {
       // keep it short and don't court someone who's abusing or messing with the agent
