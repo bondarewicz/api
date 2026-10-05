@@ -122,7 +122,8 @@ async function agentChat(req, res) {
     // tell the model where the conversation stands, so it asks who the visitor is early and only once
     const known = await store.visitorKnown(body.conversationId, ip);
     const visitorTurn = messages.filter((m) => m.role === 'user').length;
-    const state = `\n\nConversation state: today is ${new Date().toISOString().slice(0, 10)}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}.`;
+    const availabilityMentioned = messages.some((m) => m.role === 'assistant' && /finishing up|looking for (his|a) (next|new)/i.test(m.content));
+    const state = `\n\nConversation state: today is ${new Date().toISOString().slice(0, 10)}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}. His availability has ${availabilityMentioned ? 'ALREADY been mentioned, so don\'t mention it again unless asked directly' : 'not been mentioned yet'}.`;
     const turnMessages = messages.map((m) => ({ role: m.role, content: m.content }));
 
     const picked = await pickProvider(system + state, turnMessages);
