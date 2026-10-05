@@ -208,5 +208,12 @@
     "ParcelVision was acquired by Parcelhero. From April 2024 Łukasz continued on the same platform and with the same team as Technical Lead, so his time on that platform is one continuous stretch of about 13 years, starting in 2013. Someone saying '13 years at Parcelhero' is describing this correctly.",
     "Why he is leaving Parcelhero: his time there has come to an end and he is looking for his next role. There is no other reason to give."
   ],
-  "peopleManagement": "No people management at ParcelVision or Parcelhero; there he led technology choices and his own projects. At Fastlane International he was Software Development Manager and brought in junior developers."
+  "peopleManagement": "No people management at ParcelVision or Parcelhero; there he led technology choices and his own projects. At Fastlane International he was Software Development Manager and brought in junior developers.",
+  "recentEvidence": [
+    "Over the last year he put AI into production using LLMs and embeddings, with evals and human review.",
+    "He led the platform's move to Kubernetes.",
+    "He helped migrate the platform from GCP to Azure.",
+    "He works with current .NET versions."
+  ],
+  "titleReason": "At ParcelVision and Parcelhero he stayed hands-on by choice: as the first engineering hire there he led technology decisions and his own projects instead of moving into people management. (At Fastlane International, earlier, he was Software Development Manager.)"
 }
