@@ -91,6 +91,9 @@ async function requireAdmin(req, res, next) {
   }
   res.set('Cache-Control', 'no-store');
   res.set('X-Robots-Tag', 'noindex');
+  // helmet's no-referrer makes browsers send "Origin: null" on form posts, which the switch's
+  // same-origin check needs; same-origin still never leaks admin URLs to other sites
+  res.set('Referrer-Policy', 'same-origin');
   next();
 }
 
