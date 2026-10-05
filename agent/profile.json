@@ -35,7 +35,7 @@
     {
       "id": "parcelhero-ai",
       "group": "now",
-      "context": "At work, in production",
+      "context": "At work",
       "name": "AI at Parcelhero",
       "repo": null,
       "url": null,
@@ -47,7 +47,8 @@
         "quality built in"
       ],
       "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after.",
-      "label": "Parcelhero"
+      "label": "Parcelhero",
+      "blurb": "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps."
     },
     {
       "id": "dreamteam",
@@ -56,8 +57,7 @@
       "repo": "bondarewicz/dreamteam",
       "url": "https://github.com/bondarewicz/dreamteam",
       "links": {
-        "Visual tour": "https://bondarewicz.github.io/dreamteam/",
-        "npm": "https://www.npmjs.com/package/@bondarewicz/dreamteam"
+        "Visual tour": "https://bondarewicz.github.io/dreamteam/"
       },
       "visibility": "public",
       "meta": "npm v1.4.1 · TypeScript",
@@ -67,7 +67,8 @@
         "provider-agnostic"
       ],
       "summary": "Seven specialised agents and an orchestrator that take a problem statement through domain rules, architecture, implementation, quality and scope review to reviewed, spec-backed code. Any agent runs on any provider (Claude, Codex or Ollama), and every agent's behaviour is schema-enforced and graded against an eval corpus.",
-      "context": "On my own time"
+      "context": "On my own time",
+      "blurb": "A team of specialised AI agents that takes a problem from domain rules to reviewed code, on any model provider, with every agent graded by evals."
     },
     {
       "id": "kalman",
@@ -84,7 +85,8 @@
       ],
       "summary": "A software factory: issues in, gated and reviewed PRs out, with a human in exactly the places a human belongs. A simple scheduler over an append-only event log; all intelligence in fresh, budgeted agent sessions; all authority in human-committed config. Kill anything, restart it, and it resumes from the log.",
       "context": "On my own time",
-      "label": "Private project"
+      "label": "Private project",
+      "blurb": "A software factory: issues in, reviewed pull requests out. Agents do the work in budgeted sessions; humans hold the gates."
     },
     {
       "id": "paka",
