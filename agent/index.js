@@ -14,7 +14,7 @@ const system = fs.readFileSync(path.join(__dirname, spec.system), 'utf8') + JSON
 const sourceIds = [...profile.projects.map((p) => p.id), ...profile.experience.map((e) => e.id)];
 const schema = answerSchema(sourceIds);
 const limits = spec.limits;
-const JD_MIN_CHARS = 300;
+const JD_MIN_CHARS = 150;
 const RESTING = `The assistant is resting for now. You can email Łukasz directly at ${profile.contact.email}.`;
 
 function validate(messages) {
