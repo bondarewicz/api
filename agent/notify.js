@@ -1,27 +1,59 @@
 const fetch = require('node-fetch');
 
 /**
- * Pushes a notification to LEAD_WEBHOOK_URL if set.
- * ntfy.sh topics take plain text (with an optional click-through link); Slack and Discord webhooks take JSON.
+ * Push to LEAD_WEBHOOK_URL: ntfy.sh topics take plain text (with an optional click-through link);
+ * Slack and Discord webhooks take JSON.
  */
-async function notify({ title, text, link, tags, sendEmail = true }) {
+async function push({ title, text, link, tags }) {
   const url = process.env.LEAD_WEBHOOK_URL;
   if (!url) return false;
   try {
     const isNtfy = new URL(url).hostname.endsWith('ntfy.sh');
-    // ntfy can also forward the message by email (NOTIFY_EMAIL); the public server rate-limits this
-    const email = sendEmail ? process.env.NOTIFY_EMAIL : null;
-    const headers = isNtfy
-      ? { Title: title, Tags: tags || 'speech_balloon', ...(link ? { Click: link } : {}), ...(email ? { Email: email } : {}) }
-      : { 'Content-Type': 'application/json' };
-    const body = isNtfy ? text.slice(0, 3500) : JSON.stringify({ text: `${title}\n${text}`, content: `${title}\n${text}` });
-    const r = await fetch(url, { method: 'POST', headers, body });
-    if (!r.ok) throw new Error(`webhook http ${r.status}`);
+    const r = await fetch(url, isNtfy
+      ? { method: 'POST', headers: { Title: title, Tags: tags || 'speech_balloon', ...(link ? { Click: link } : {}) }, body: text.slice(0, 3500) }
+      : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: `${title}\n${text}`, content: `${title}\n${text}` }) });
+    if (!r.ok) throw new Error(`webhook http ${r.status}: ${(await r.text()).slice(0, 200)}`);
     return true;
   } catch (err) {
-    console.error('notify failed', err.message);
+    console.error('push failed', err.message);
     return false;
   }
+}
+
+/**
+ * Email via Resend (RESEND_API_KEY) to NOTIFY_EMAIL. Without a verified domain Resend only
+ * delivers from onboarding@resend.dev to the account owner's own address, which is all we need.
+ */
+async function email({ title, text, link }) {
+  const key = process.env.RESEND_API_KEY;
+  const to = process.env.NOTIFY_EMAIL;
+  if (!key || !to) return false;
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.NOTIFY_FROM || 'bondarewicz.com <onboarding@resend.dev>',
+        to: [to],
+        subject: title,
+        text: link ? `${text}\n\nFull conversation: ${link}` : text,
+      }),
+    });
+    if (!r.ok) throw new Error(`resend http ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    return true;
+  } catch (err) {
+    console.error('email failed', err.message);
+    return false;
+  }
+}
+
+/**
+ * Sends the push and (unless sendEmail is false) the email independently, so one failing
+ * never blocks the other. Returns true if at least one went out.
+ */
+async function notify({ sendEmail = true, ...message }) {
+  const [pushed, emailed] = await Promise.all([push(message), sendEmail ? email(message) : false]);
+  return pushed || emailed;
 }
 
 const adminLink = (id) => {
