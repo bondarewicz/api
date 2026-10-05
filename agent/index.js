@@ -67,6 +67,11 @@ async function pickProvider(systemText, messages) {
   return { name: 'anthropic', reserved };
 }
 
+function isVisitorQuestion(q) {
+  // \b treats Ł as a non-letter, so match the name separately
+  return (/\b(he|his|him)\b/i.test(q) || /[łl]ukasz/i.test(q)) && !/\b(you|your|you're|yours)\b/i.test(q);
+}
+
 const emptyReply = (answer, status) => ({ answer, fit: { strong: [], discuss: [] }, sources: [], followups: [], offer_contact: true, visitor: {}, status });
 
 /**
@@ -139,6 +144,9 @@ async function agentChat(req, res) {
     console.log(`agent: ${result.model} in=${result.usage.input} out=${result.usage.output} $${result.costUsd.toFixed(5)}`);
 
     const reply = normalise(result.raw, sourceIds);
+    // follow-ups become the visitor's next message when clicked, so they must be questions
+    // about Łukasz, never the agent asking the visitor something ("What role are you hiring for?")
+    reply.followups = reply.followups.filter(isVisitorQuestion);
     // house style: no em dashes, whatever the model does
     reply.answer = reply.answer.replace(/\s*—\s*/g, ', ');
     const genuine = reply.intent === 'genuine';
