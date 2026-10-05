@@ -21,6 +21,7 @@ const { fileUpload } = require('./routes');
 const { getReplay, postReplay} = require('./routes');
 const { postDelay } = require('./routes');
 const { qrCode, visits, weather } = require('./routes');
+const { agentChat, agentProfile, agentLead } = require('./agent');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -491,5 +492,64 @@ apiRoutes.post('/delay/:value', postDelay);
 /**
  * expose over v1 entrypoint
  */
+/**
+ * @swagger
+ * /agent/chat:
+ *   post:
+ *     tags: [Agent]
+ *     summary: Ask the site assistant about Łukasz (rate limited, budget capped)
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role: { type: string, enum: [user, assistant] }
+ *                     content: { type: string }
+ *     responses:
+ *       200:
+ *         description: Structured reply (answer, fit, sources, followups, offer_contact)
+ */
+apiRoutes.post('/agent/chat', agentChat);
+
+/**
+ * @swagger
+ * /agent/lead:
+ *   post:
+ *     tags: [Agent]
+ *     summary: Leave contact details (and optionally the conversation) for Łukasz
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string }
+ *               note: { type: string }
+ *               transcript: { type: array, items: { type: object } }
+ *     responses:
+ *       200:
+ *         description: Saved; notified says whether a notification went out
+ */
+apiRoutes.post('/agent/lead', agentLead);
+
+/**
+ * @swagger
+ * /agent/profile:
+ *   get:
+ *     tags: [Agent]
+ *     summary: The profile the assistant answers from
+ *     responses:
+ *       200:
+ *         description: Profile JSON
+ */
+apiRoutes.get('/agent/profile', agentProfile);
+
 api.use('/v1', apiRoutes);
 module.exports = api;

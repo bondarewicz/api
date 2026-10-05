@@ -1,0 +1,30 @@
+{
+  "name": "lb-agent",
+  "system": "system.md",
+  "profile": "profile.json",
+  "providers": {
+    "ollama": {
+      "model": "gemma4",
+      "url": "http://localhost:11434"
+    },
+    "anthropic": {
+      "model": "claude-haiku-4-5",
+      "priceUsdPerMTok": {
+        "input": 1.0,
+        "output": 5.0,
+        "cacheWrite": 1.25,
+        "cacheRead": 0.1
+      }
+    }
+  },
+  "limits": {
+    "maxMessageChars": 6000,
+    "maxTurns": 12,
+    "maxOutputTokens": 700,
+    "perIpPerHour": 20,
+    "globalPerDay": 500,
+    "dailyBudgetUsd": 0.5,
+    "leadsPerIpPerHour": 5,
+    "leadsPerDay": 100
+  }
+}
