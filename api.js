@@ -22,6 +22,7 @@ const { getReplay, postReplay} = require('./routes');
 const { postDelay } = require('./routes');
 const { qrCode, visits, weather } = require('./routes');
 const { agentChat, agentProfile, agentLead, admin } = require('./agent');
+const { requireCloudflare } = require('./agent/guard');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -492,6 +493,16 @@ apiRoutes.post('/delay/:value', postDelay);
 /**
  * expose over v1 entrypoint
  */
+// agent routes: only via Cloudflare (CF_ORIGIN_SECRET), and only callable from the site in a browser
+const AGENT_ORIGINS = ['https://bondarewicz.com', 'https://www.bondarewicz.com', 'http://localhost:5174'];
+apiRoutes.use('/agent', requireCloudflare, (req, res, next) => {
+  const origin = req.headers.origin;
+  if (AGENT_ORIGINS.includes(origin)) res.header('Access-Control-Allow-Origin', origin);
+  else res.removeHeader('Access-Control-Allow-Origin');
+  res.header('Vary', 'Origin');
+  next();
+});
+
 /**
  * @swagger
  * /agent/chat:

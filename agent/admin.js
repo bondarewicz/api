@@ -1,5 +1,9 @@
 const crypto = require('crypto');
 const store = require('./store');
+const guard = require('./guard');
+const { client: redis } = require('../redis');
+
+const MAX_FAILURES_PER_HOUR = 10;
 
 // Visitor text is untrusted: everything rendered goes through esc().
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,12 +20,20 @@ function safeEqual(a, b) {
 /**
  * HTTP basic auth against ADMIN_PASSWORD (any username). Without the variable the admin is off.
  */
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   const password = process.env.ADMIN_PASSWORD;
   if (!password) return res.status(404).end();
+  const failKey = `agent:adminfail:${guard.visitorIp(req)}:${guard.hour()}`;
+  try {
+    if (parseInt((await redis.get(failKey)) || '0', 10) >= MAX_FAILURES_PER_HOUR) {
+      return res.status(429).send('Too many attempts, try again later');
+    }
+  } catch (err) { return res.status(503).end(); }
   const [scheme, encoded] = (req.headers.authorization || '').split(' ');
   const given = scheme === 'Basic' && encoded ? Buffer.from(encoded, 'base64').toString().split(':').slice(1).join(':') : '';
   if (!safeEqual(given, password)) {
+    // a bare request (no credentials yet) is the browser asking for the prompt, not a failed guess
+    if (encoded) await guard.countWithExpiry(failKey, 3600);
     res.set('WWW-Authenticate', 'Basic realm="bondarewicz agent"');
     return res.status(401).send('Authentication required');
   }

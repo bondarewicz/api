@@ -33,17 +33,33 @@ function validate(messages) {
   return null;
 }
 
+// Worst case for one Claude call: every input character a token (generous) plus the full output.
+function estimateUsd(systemText, messages) {
+  const price = spec.providers.anthropic.priceUsdPerMTok;
+  const chars = systemText.length + messages.reduce((n, m) => n + m.content.length, 0);
+  return ((chars / 3) * price.input + limits.maxOutputTokens * price.output) / 1e6;
+}
+
 /**
- * Picks the provider for this request. Claude only runs while today's spend is under budget;
- * after that it falls back to Ollama if AGENT_FALLBACK=ollama, otherwise the agent rests.
+ * Picks the provider for this request. A Claude call first reserves its worst-case cost from
+ * today's budget and takes one of a few concurrent slots; when either runs out it falls back
+ * to Ollama if AGENT_FALLBACK=ollama, otherwise the agent rests.
  */
-async function pickProvider() {
+async function pickProvider(systemText, messages) {
   if (process.env.AGENT_ENABLED === 'false') return null;
   const wanted = process.env.AGENT_PROVIDER || 'ollama';
-  if (wanted !== 'anthropic') return 'ollama';
+  if (wanted !== 'anthropic') return { name: 'ollama', reserved: 0 };
+  const fallback = process.env.AGENT_FALLBACK === 'ollama' ? { name: 'ollama', reserved: 0 } : null;
+  if (!process.env.ANTHROPIC_API_KEY) return fallback;
+
   const budget = parseFloat(process.env.AGENT_DAILY_BUDGET_USD || limits.dailyBudgetUsd);
-  if (process.env.ANTHROPIC_API_KEY && (await guard.spentToday()) < budget) return 'anthropic';
-  return process.env.AGENT_FALLBACK === 'ollama' ? 'ollama' : null;
+  const reserved = estimateUsd(systemText, messages);
+  if (!(await guard.reserve(reserved, budget))) return fallback;
+  if (!(await guard.acquireSlot(limits.maxConcurrentCalls))) {
+    await guard.settle(-reserved);
+    return fallback;
+  }
+  return { name: 'anthropic', reserved };
 }
 
 const emptyReply = (answer, status) => ({ answer, fit: { strong: [], discuss: [] }, sources: [], followups: [], offer_contact: true, visitor: {}, status });
@@ -56,11 +72,12 @@ async function record({ req, ip, body, question, reply, model, costUsd }) {
   try {
     const { conv, isNew } = await store.recordTurn({ id: body.conversationId, req, ip, meta: body.meta, question, reply, model, costUsd });
     if (!conv) return false;
-    if (isNew) {
+    // one "new conversation" push per visitor per hour, however many ids they make up
+    if (isNew && (await guard.firstTime(`agent:notified:${ip}:${guard.hour()}`, 3600))) {
       notify({ title: `New conversation · ${where(conv)}`, text: question.slice(0, 500), link: adminLink(conv.id), sendEmail: false });
     }
     const v = reply.visitor || {};
-    if (isEmail(v.email) && (await store.setVisitor(conv.id, { name: v.name, email: v.email, company: v.company, role: v.role }))) {
+    if (isEmail(v.email) && (await store.setVisitor(conv.id, { name: v.name, email: v.email, company: v.company, role: v.role }, ip))) {
       await saveLead({ name: v.name, email: v.email, company: v.company, note: v.role, conversationId: conv.id, ip, source: 'chat' });
       return true;
     }
@@ -84,29 +101,33 @@ async function agentChat(req, res) {
       const answer = admitted.reason === 'visitor'
         ? `That's a lot of questions for one hour. Try again later, or leave your email below.`
         : RESTING;
-      if (admitted.reason === 'global') await record({ req, ip, body, question, reply: emptyReply(answer, 'over daily limit') });
+      // over a limit: answer without recording or notifying, so the limits can't be used to flood
       return res.status(admitted.status).json({ error: admitted.reason, answer, offer_contact: true, remaining: 0 });
     }
 
-    const name = await pickProvider();
-    if (!name) {
+    // tell the model where the conversation stands, so it asks who the visitor is early and only once
+    const known = await store.visitorKnown(body.conversationId, ip);
+    const visitorTurn = messages.filter((m) => m.role === 'user').length;
+    const state = `\n\nConversation state: this is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}.`;
+    const turnMessages = messages.map((m) => ({ role: m.role, content: m.content }));
+
+    const picked = await pickProvider(system + state, turnMessages);
+    if (!picked) {
       await record({ req, ip, body, question, reply: emptyReply(RESTING, 'resting') });
       return res.status(503).json({ error: 'resting', answer: RESTING, offer_contact: true, remaining: admitted.remaining });
     }
+    const { name, reserved } = picked;
 
-    // tell the model where the conversation stands, so it asks who the visitor is early and only once
-    const known = store.ID_RE.test(body.conversationId || '') && Boolean(((await store.get(body.conversationId)) || { visitor: {} }).visitor.email);
-    const visitorTurn = messages.filter((m) => m.role === 'user').length;
-    const state = `\n\nConversation state: this is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}.`;
-
-    const result = await providers[name].run({
-      system: system + state,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      schema,
-      limits,
-      config: spec.providers[name],
-    });
-    await guard.addSpend(result.costUsd);
+    let result;
+    try {
+      result = await providers[name].run({ system: system + state, messages: turnMessages, schema, limits, config: spec.providers[name] });
+    } catch (err) {
+      if (reserved) await guard.settle(-reserved);
+      throw err;
+    } finally {
+      if (name === 'anthropic') await guard.releaseSlot();
+    }
+    if (reserved) await guard.settle(result.costUsd - reserved);
     console.log(`agent: ${result.model} in=${result.usage.input} out=${result.usage.output} $${result.costUsd.toFixed(5)}`);
 
     const reply = normalise(result.raw, sourceIds);

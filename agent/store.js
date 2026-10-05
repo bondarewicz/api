@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const fetch = require('node-fetch');
 const { client: redis } = require('../redis');
 
@@ -43,6 +44,17 @@ async function get(id) {
   return raw ? JSON.parse(raw) : null;
 }
 
+/**
+ * A conversation belongs to the IP that started it. Anyone else sending the same id gets their
+ * own conversation (the id plus a hash of their IP), so they can't append to or rewrite it.
+ */
+async function resolveOwned(id, ip) {
+  const conv = await get(id);
+  if (!conv || conv.ip === ip) return { id, conv };
+  const own = `${id.slice(0, 48)}-${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 8)}`;
+  return { id: own, conv: await get(own) };
+}
+
 async function save(conv) {
   conv.messages = conv.messages.slice(-MAX_MESSAGES);
   await redis.set(key(conv.id), JSON.stringify(conv), { EX: retentionSeconds() });
@@ -56,7 +68,8 @@ async function save(conv) {
 async function recordTurn({ id, req, ip, meta, question, reply, model, costUsd }) {
   if (!ID_RE.test(id || '')) return { conv: null, isNew: false };
   const now = new Date().toISOString();
-  let conv = await get(id);
+  let conv;
+  ({ id, conv } = await resolveOwned(id, ip));
   const isNew = !conv;
   if (!conv) {
     const m = meta || {};
@@ -88,9 +101,9 @@ async function recordTurn({ id, req, ip, meta, question, reply, model, costUsd }
 /**
  * Merges contact details into the conversation. Returns true when an email is newly known.
  */
-async function setVisitor(id, details) {
+async function setVisitor(id, details, ip) {
   if (!ID_RE.test(id || '')) return false;
-  const conv = await get(id);
+  const { conv } = await resolveOwned(id, ip);
   if (!conv) return false;
   const had = Boolean(conv.visitor.email);
   for (const [k, v] of Object.entries(details)) {
@@ -111,4 +124,10 @@ async function list(limit = 100) {
   return convs;
 }
 
-module.exports = { recordTurn, setVisitor, get, list, ID_RE };
+async function visitorKnown(id, ip) {
+  if (!ID_RE.test(id || '')) return false;
+  const { conv } = await resolveOwned(id, ip);
+  return Boolean(conv && conv.visitor.email);
+}
+
+module.exports = { recordTurn, setVisitor, visitorKnown, get, list, ID_RE };

@@ -25,6 +25,7 @@
     "globalPerDay": 500,
     "dailyBudgetUsd": 0.5,
     "leadsPerIpPerHour": 5,
-    "leadsPerDay": 100
+    "leadsPerDay": 100,
+    "maxConcurrentCalls": 4
   }
 }

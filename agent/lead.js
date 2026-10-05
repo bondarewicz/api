@@ -49,7 +49,7 @@ function makeLeadHandler({ visitorIp, admit, limits }) {
       const admitted = await admit('lead', ip, { perIpPerHour: limits.leadsPerIpPerHour, globalPerDay: limits.leadsPerDay });
       if (!admitted.ok) return res.status(429).json({ error: 'Too many requests, please email directly.' });
 
-      if (body.conversationId) await store.setVisitor(body.conversationId, { name: body.name, email: body.email, note: body.note });
+      if (body.conversationId) await store.setVisitor(body.conversationId, { name: body.name, email: body.email, note: body.note }, ip);
       const notified = await saveLead({ ...body, ip, source: 'form' });
       res.json({ ok: true, notified });
     } catch (err) {

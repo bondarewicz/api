@@ -34,6 +34,22 @@
   ],
   "projects": [
     {
+      "id": "parcelhero-ai",
+      "group": "now",
+      "context": "At work, in production",
+      "name": "AI at Parcelhero",
+      "repo": null,
+      "url": null,
+      "visibility": "private",
+      "meta": "Technical Lead · since 2024",
+      "tags": [
+        "AI in production",
+        "distributed systems",
+        "quality built in"
+      ],
+      "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after."
+    },
+    {
       "id": "dreamteam",
       "group": "now",
       "name": "Dream Team",
@@ -50,7 +66,8 @@
         "evals",
         "provider-agnostic"
       ],
-      "summary": "Seven specialised agents and an orchestrator that take a problem statement through domain rules, architecture, implementation, quality and scope review to reviewed, spec-backed code. Any agent runs on any provider (Claude, Codex or Ollama), and every agent's behaviour is schema-enforced and graded against an eval corpus."
+      "summary": "Seven specialised agents and an orchestrator that take a problem statement through domain rules, architecture, implementation, quality and scope review to reviewed, spec-backed code. Any agent runs on any provider (Claude, Codex or Ollama), and every agent's behaviour is schema-enforced and graded against an eval corpus.",
+      "context": "On my own time"
     },
     {
       "id": "kalman",
@@ -65,7 +82,8 @@
         "budgets",
         "human gates"
       ],
-      "summary": "A software factory: issues in, gated and reviewed PRs out, with a human in exactly the places a human belongs. A simple scheduler over an append-only event log; all intelligence in fresh, budgeted agent sessions; all authority in human-committed config. Kill anything, restart it, and it resumes from the log."
+      "summary": "A software factory: issues in, gated and reviewed PRs out, with a human in exactly the places a human belongs. A simple scheduler over an append-only event log; all intelligence in fresh, budgeted agent sessions; all authority in human-committed config. Kill anything, restart it, and it resumes from the log.",
+      "context": "On my own time"
     },
     {
       "id": "paka",
