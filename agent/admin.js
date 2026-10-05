@@ -100,8 +100,19 @@ async function requireAdmin(req, res, next) {
 /* ───── what a conversation is, in a few words ───── */
 
 const questions = (c) => c.messages.filter((m) => m.role === 'user');
-const flagged = (c) => c.messages.some((m) => m.status === 'abusive' || m.status === 'off_topic');
-const isLead = (c) => Boolean(c.visitor && c.visitor.email);
+const statusCount = (c, ...kinds) => c.messages.filter((m) => m.role === 'assistant' && kinds.includes(m.status)).length;
+const flagged = (c) => statusCount(c, 'abusive', 'off_topic') > 0;
+
+// Throwaway or made-up addresses (1@1.com, a@b.co, test@example.com) don't make someone a lead.
+const FAKE_MAIL = /@(example|test|mailinator|guerrillamail|10minutemail|tempmail|yopmail|asdf|qwerty)\.|^(test|asdf|qwerty|aaa+|xxx+)@/i;
+function emailLooksReal(email) {
+  if (!email || FAKE_MAIL.test(email)) return false;
+  const [local, domain = ''] = email.split('@');
+  const name = domain.split('.')[0] || '';
+  return !(local.length <= 2 && name.length <= 2);
+}
+const isLead = (c) => Boolean(c.visitor && emailLooksReal(c.visitor.email));
+const fakeEmail = (c) => Boolean(c.visitor && c.visitor.email && !emailLooksReal(c.visitor.email));
 const place = (c) => { const g = c.geo || {}; return [g.city, g.countryName || g.country].filter(Boolean).join(', ') || 'Unknown location'; };
 
 function source(c) {
@@ -129,19 +140,27 @@ const WANTS_CONTACT = /\b(follow ?-?up|foll?up|get in touch|contact (me|him)|rea
 const ROLE_TALK = /\b(hiring|hire|role|position|recruit|vacanc|contract|freelance|project|budget|rate|salary|start date|interview|opportunit)/i;
 
 function priority(c) {
-  if (flagged(c)) return { level: 'Noise', score: 0, reasons: ['flagged as off-topic or abusive'] };
   const v = c.visitor || {};
   const asked = questions(c);
+  const genuine = statusCount(c, 'ok');
+  const offTopic = statusCount(c, 'off_topic');
+  const abusive = statusCount(c, 'abusive');
+  // Noise only when the conversation is mostly junk; a bad start that turns serious still counts
+  if ((abusive && !genuine) || (offTopic + abusive > genuine && !isLead(c))) {
+    return { level: 'Noise', score: 0, reasons: [abusive ? 'abusive, no real questions' : 'mostly off-topic'] };
+  }
   const reasons = [];
   let score = 0;
-  if (v.email && !FREE_MAIL.test(v.email)) { score += 40; reasons.push('left a work email'); }
-  else if (v.email) { score += 25; reasons.push('left contact details'); }
+  if (isLead(c) && !FREE_MAIL.test(v.email)) { score += 40; reasons.push('left a work email'); }
+  else if (isLead(c)) { score += 25; reasons.push('left contact details'); }
+  else if (fakeEmail(c)) reasons.push('email looks made up');
   if (c.messages.some((m) => m.fit && (m.fit.strong.length || m.fit.discuss.length))) { score += 30; reasons.push('pasted a job description'); }
   if (asked.some((m) => WANTS_CONTACT.test(m.content))) { score += 25; reasons.push('asked to be contacted'); }
   if (asked.some((m) => ROLE_TALK.test(m.content))) { score += 15; reasons.push('talked about a role or project'); }
   if (v.company) { score += 10; reasons.push(`named a company (${v.company})`); }
   if (asked.length >= 3) { score += 10; reasons.push(`${asked.length} questions`); }
   if (/linkedin\./i.test(c.referrer || '')) { score += 5; reasons.push('came from LinkedIn'); }
+  if (offTopic + abusive) { score -= 10 * (offTopic + abusive); reasons.push(`${offTopic + abusive} off-topic or abusive ${offTopic + abusive === 1 ? 'message' : 'messages'}`); }
   const level = score >= 50 ? 'High' : score >= 20 ? 'Medium' : 'Low';
   return { level, score, reasons: reasons.length ? reasons : ['a quick look, nothing more yet'] };
 }
@@ -152,6 +171,7 @@ function badges(c) {
   const p = priority(c);
   const out = [`<span class="badge p-${p.level.toLowerCase()}">${p.level}</span>`];
   if (isLead(c)) out.push('<span class="badge lead">Lead</span>');
+  else if (fakeEmail(c)) out.push('<span class="badge p-low">Fake email?</span>');
   return out.join(' ');
 }
 
@@ -333,4 +353,4 @@ ${v.note ? `<p style="margin:10px 0 0">${esc(v.note)}</p>` : ''}
 </div>`));
 }
 
-module.exports = { requireAdmin, list, detail, killSwitch };
+module.exports = { requireAdmin, list, detail, killSwitch, priority, emailLooksReal };
