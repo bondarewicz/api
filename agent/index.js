@@ -51,7 +51,7 @@ function estimateUsd(systemText, messages) {
  * to Ollama if AGENT_FALLBACK=ollama, otherwise the agent rests.
  */
 async function pickProvider(systemText, messages) {
-  if (process.env.AGENT_ENABLED === 'false') return null;
+  if (process.env.AGENT_ENABLED === 'false' || (await guard.killState())) return null;
   const wanted = process.env.AGENT_PROVIDER || 'ollama';
   if (wanted !== 'anthropic') return { name: 'ollama', reserved: 0 };
   const fallback = process.env.AGENT_FALLBACK === 'ollama' ? { name: 'ollama', reserved: 0 } : null;

@@ -565,6 +565,7 @@ apiRoutes.get('/agent/profile', agentProfile);
 // private conversation log (basic auth, ADMIN_PASSWORD); deliberately left out of the Swagger docs
 apiRoutes.get('/agent/admin', admin.requireAdmin, admin.list);
 apiRoutes.get('/agent/admin/c/:id', admin.requireAdmin, admin.detail);
+apiRoutes.post('/agent/admin/killswitch', admin.requireAdmin, admin.killSwitch);
 
 api.use('/v1', apiRoutes);
 module.exports = api;

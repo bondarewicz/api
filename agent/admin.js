@@ -33,6 +33,42 @@ function safeEqual(a, b) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 
+/* ───── kill switch ───── */
+
+// The switch is a form, and browsers resend saved basic-auth credentials even on posts from
+// other sites, so it needs a token only the admin page knows, plus a same-origin check.
+function switchToken() {
+  return crypto.createHmac('sha256', process.env.ADMIN_PASSWORD || '').update(`killswitch:${guard.day()}`).digest('hex').slice(0, 32);
+}
+
+function sameOrigin(req) {
+  const src = req.headers.origin || req.headers.referer || '';
+  try { return new URL(src).host === req.headers.host; } catch { return false; }
+}
+
+async function killSwitch(req, res) {
+  const body = req.body || {};
+  if (!sameOrigin(req) || !safeEqual(body.token || '', switchToken())) {
+    return res.status(403).send('Forbidden. Reload the admin page and try again.');
+  }
+  const agentOff = body.state === 'off';
+  await guard.setKilled(agentOff, guard.visitorIp(req));
+  console.log(`agent: kill switch flipped, agent is now ${agentOff ? 'OFF' : 'ON'}`);
+  res.redirect(303, BASE);
+}
+
+async function switchPanel() {
+  const killed = await guard.killState();
+  const byEnv = process.env.AGENT_ENABLED === 'false';
+  if (byEnv) {
+    return `<div class="switch off"><div><b>Agent is OFF</b><div class="sub">Turned off with AGENT_ENABLED=false on Railway. Remove that variable to turn it back on.</div></div></div>`;
+  }
+  const form = (state, label, cls) => `<form method="post" action="${BASE}/killswitch"><input type="hidden" name="token" value="${switchToken()}"><input type="hidden" name="state" value="${state}"><button class="${cls}" type="submit">${label}</button></form>`;
+  return killed
+    ? `<div class="switch off"><div><b>Agent is OFF</b><div class="sub">No calls to Claude. Visitors are told the assistant is resting and can still leave their email. Turned off ${esc(ago(killed.at))} (${esc(localTime(killed.at))}).</div></div>${form('on', 'Turn agent on', 'on')}</div>`
+    : `<div class="switch"><div><b><span class="live"></span>Agent is ON</b><div class="sub">Claude is answering visitors. Turn it off instantly if anything looks wrong.</div></div>${form('off', 'Turn agent off', 'kill')}</div>`;
+}
+
 /**
  * HTTP basic auth against ADMIN_PASSWORD (any username). Without the variable the admin is off.
  */
@@ -145,6 +181,14 @@ aside dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 12px;margin:
 aside dt{color:var(--muted)}aside dd{margin:0;overflow-wrap:anywhere}
 .person{font-size:18px;font-weight:600}
 .btn{display:inline-block;margin-top:12px;padding:10px 16px;border-radius:10px;background:var(--amber);color:var(--night);text-decoration:none;font-weight:600}
+.switch{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 0;padding:16px 18px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.switch.off{background:var(--warn-soft);border-color:#E9C9A0}
+.switch b{font-size:16px}
+.switch .live{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2E9E6A;margin-right:8px}
+.switch form{margin:0}
+.switch button{font:inherit;font-weight:600;padding:10px 16px;border-radius:10px;border:0;cursor:pointer}
+.switch button.kill{background:#B42318;color:#fff}
+.switch button.on{background:var(--teal-deep);color:#fff}
 @media (max-width:900px){.detail{grid-template-columns:minmax(0,1fr)}aside{order:-1}}
 @media (max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr);gap:6px}.row .when{text-align:left}.msg{max-width:100%}}
 </style></head><body>
@@ -187,6 +231,7 @@ async function list(req, res) {
 
   res.send(page('Visitor conversations', `<h1>Visitor conversations</h1>
 <div class="sub">Everything visitors asked the site agent, newest first. Kept ${esc(process.env.AGENT_RETENTION_DAYS || '180')} days.</div>
+${await switchPanel()}
 ${await stats(all)}
 <nav class="tabs">${tab('all', 'All', all.length)}${tab('leads', 'Leads', all.filter(isLead).length)}${tab('flagged', 'Flagged', all.filter(flagged).length)}</nav>
 <div class="list">${rows || `<div class="empty">${filter === 'all' ? 'No conversations yet.' : 'Nothing here yet.'}</div>`}</div>`));
@@ -242,4 +287,4 @@ ${v.note ? `<p style="margin:10px 0 0">${esc(v.note)}</p>` : ''}
 </div>`));
 }
 
-module.exports = { requireAdmin, list, detail };
+module.exports = { requireAdmin, list, detail, killSwitch };

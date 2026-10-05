@@ -115,4 +115,18 @@ async function isPaused(ip) {
   return Boolean(await redis.get(`agent:paused:${ip}`));
 }
 
-module.exports = { strike, clearStrikes, isPaused, visitorIp, requireCloudflare, safeEqual, admit, reserve, settle, acquireSlot, releaseSlot, firstTime, countWithExpiry, day, hour };
+/**
+ * Emergency off switch, flipped from the admin page. Stored in Redis so it applies to the
+ * very next request without a redeploy.
+ */
+async function killState() {
+  const raw = await redis.get('agent:killswitch');
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function setKilled(on, by) {
+  if (on) await redis.set('agent:killswitch', JSON.stringify({ at: new Date().toISOString(), by }));
+  else await redis.del('agent:killswitch');
+}
+
+module.exports = { killState, setKilled, strike, clearStrikes, isPaused, visitorIp, requireCloudflare, safeEqual, admit, reserve, settle, acquireSlot, releaseSlot, firstTime, countWithExpiry, day, hour };
