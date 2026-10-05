@@ -19,6 +19,7 @@ function answerSchema(sourceIds) {
       sources: { type: 'array', items: { type: 'string', enum: sourceIds } },
       followups: { type: 'array', items: { type: 'string' } },
       offer_contact: { type: 'boolean' },
+      intent: { type: 'string', enum: ['genuine', 'off_topic', 'abusive'] },
       visitor: {
         type: 'object',
         properties: {
@@ -31,7 +32,7 @@ function answerSchema(sourceIds) {
         additionalProperties: false,
       },
     },
-    required: ['answer', 'fit', 'sources', 'followups', 'offer_contact', 'visitor'],
+    required: ['answer', 'fit', 'sources', 'followups', 'offer_contact', 'intent', 'visitor'],
     additionalProperties: false,
   };
 }
@@ -56,6 +57,7 @@ function normalise(raw, sourceIds) {
     sources: [...new Set(list(data.sources, 6, 40).filter((id) => sourceIds.includes(id)))],
     followups: list(data.followups, 2, 120),
     offer_contact: data.offer_contact === true,
+    intent: ['off_topic', 'abusive'].includes(data.intent) ? data.intent : 'genuine',
     visitor: { name: clip(v.name, 120), email: clip(v.email, 254), company: clip(v.company, 120), role: clip(v.role, 120) },
   };
 }

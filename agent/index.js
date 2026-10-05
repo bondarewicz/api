@@ -13,13 +13,18 @@ const providers = {
   anthropic: require('./providers/anthropic'),
 };
 
-const system = fs.readFileSync(path.join(__dirname, spec.system), 'utf8') + JSON.stringify(profile, null, 2);
+// the model only gets public links, never an email address it could hand out
+const promptProfile = { ...profile, contact: { github: profile.contact.github, npm: profile.contact.npm } };
+const system = fs.readFileSync(path.join(__dirname, spec.system), 'utf8') + JSON.stringify(promptProfile, null, 2);
 const sourceIds = [...profile.projects.map((p) => p.id), ...profile.experience.map((e) => e.id)];
 const schema = answerSchema(sourceIds);
 const limits = spec.limits;
 const JD_MIN_CHARS = 150;
 const ASK_WHO = 'By the way, who am I talking to? Share your name and the best email to reach you, and I\'ll make sure Łukasz gets back to you.';
-const RESTING = `The assistant is resting for now. You can email Łukasz directly at ${profile.contact.email}.`;
+const RESTING = 'The assistant is resting for now. Leave your email with the button below and Łukasz will get back to you.';
+const PAUSED = 'Let\'s leave it there for now. If you have a question about Łukasz\'s work later, I\'m happy to help.';
+const ABUSE_LIMIT = 2;
+const OFF_TOPIC_LIMIT = 4;
 
 function validate(messages) {
   if (!Array.isArray(messages) || messages.length === 0) return 'messages must be a non-empty array';
@@ -68,12 +73,12 @@ const emptyReply = (answer, status) => ({ answer, fit: { strong: [], discuss: []
  * Saves the turn to the conversation log, notifies on a new conversation,
  * and turns contact details the visitor typed into a lead. Never fails the request.
  */
-async function record({ req, ip, body, question, reply, model, costUsd }) {
+async function record({ req, ip, body, question, reply, model, costUsd, notifyNew = true }) {
   try {
     const { conv, isNew } = await store.recordTurn({ id: body.conversationId, req, ip, meta: body.meta, question, reply, model, costUsd });
     if (!conv) return false;
     // one "new conversation" push per visitor per hour, however many ids they make up
-    if (isNew && (await guard.firstTime(`agent:notified:${ip}:${guard.hour()}`, 3600))) {
+    if (isNew && notifyNew && (await guard.firstTime(`agent:notified:${ip}:${guard.hour()}`, 3600))) {
       notify({ title: `New conversation · ${where(conv)}`, text: question.slice(0, 500), link: adminLink(conv.id), sendEmail: false });
     }
     const v = reply.visitor || {};
@@ -96,6 +101,9 @@ async function agentChat(req, res) {
   const ip = guard.visitorIp(req);
   const question = messages[messages.length - 1].content;
   try {
+    if (await guard.isPaused(ip)) {
+      return res.status(429).json({ error: 'paused', answer: PAUSED, offer_contact: false, remaining: 0 });
+    }
     const admitted = await guard.admit('chat', ip, limits);
     if (!admitted.ok) {
       const answer = admitted.reason === 'visitor'
@@ -131,13 +139,21 @@ async function agentChat(req, res) {
     console.log(`agent: ${result.model} in=${result.usage.input} out=${result.usage.output} $${result.costUsd.toFixed(5)}`);
 
     const reply = normalise(result.raw, sourceIds);
+    const genuine = reply.intent === 'genuine';
+    if (!genuine) {
+      // keep it short and don't court someone who's abusing or messing with the agent
+      Object.assign(reply, { offer_contact: false, followups: [], fit: { strong: [], discuss: [] }, visitor: {} });
+      await guard.strike(ip, reply.intent, { abusive: ABUSE_LIMIT, off_topic: OFF_TOPIC_LIMIT });
+    } else {
+      await guard.clearStrikes(ip, 'off_topic');
+    }
     // a fit report only makes sense against a pasted job description
     if (question.length < JD_MIN_CHARS) reply.fit = { strong: [], discuss: [] };
     if (!reply.answer && !reply.fit.strong.length) reply.answer = 'Sorry, I couldn\'t answer that. Leave your email and Łukasz will reply himself.';
     // the model doesn't reliably ask on its own, so make sure the first answer does
-    if (!known && visitorTurn === 1 && !/\?\s*$/.test(reply.answer)) reply.answer = `${reply.answer}\n\n${ASK_WHO}`;
+    if (genuine && !known && visitorTurn === 1 && !/\?\s*$/.test(reply.answer) && !/email/i.test(reply.answer)) reply.answer = `${reply.answer}\n\n${ASK_WHO}`;
 
-    const contactSaved = await record({ req, ip, body, question, reply: { ...reply, status: 'ok' }, model: result.model, costUsd: result.costUsd });
+    const contactSaved = await record({ req, ip, body, question, reply: { ...reply, status: genuine ? 'ok' : reply.intent }, model: result.model, costUsd: result.costUsd, notifyNew: genuine });
     const { visitor, ...publicReply } = reply;
     res.json({ ...publicReply, contact_saved: contactSaved, remaining: admitted.remaining });
   } catch (err) {

@@ -12,7 +12,6 @@
     "Fractional CTO, logistics"
   ],
   "contact": {
-    "email": "hello@bondarewicz.com",
     "github": "https://github.com/bondarewicz",
     "linkedin": "https://www.linkedin.com/in/[YOUR-HANDLE]",
     "npm": "https://www.npmjs.com/package/@bondarewicz/dreamteam"
@@ -140,7 +139,8 @@
         "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps.",
         "Architecting distributed systems that stay up and scale when they need to.",
         "Creating a culture where quality is built in from the start, not patched in after."
-      ]
+      ],
+      "duration": "since April 2024"
     },
     {
       "id": "parcelvision",
@@ -155,7 +155,8 @@
         "Took SaaS products from early prototypes to full product lines shipping to real users.",
         "Went from same-day deploys being a dream to being the default.",
         "Designed infrastructure that scaled with demand without scaling the cost."
-      ]
+      ],
+      "duration": "10 years 8 months"
     },
     {
       "id": "fastlane",
@@ -169,7 +170,8 @@
         "Took products from early concepts to working business in logistics and software.",
         "Bridged the gap between dev and the rest of the company, making sure what was built matched what the business needed.",
         "Designed logistics platforms that held up under real pressure, led UI/UX for web and early mobile, and brought in junior devs as the team grew."
-      ]
+      ],
+      "duration": "5 years 10 months"
     }
   ],
   "education": [

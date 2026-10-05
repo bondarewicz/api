@@ -98,4 +98,21 @@ async function firstTime(key, ttlSeconds) {
   return (await redis.set(key, '1', { NX: true, EX: ttlSeconds })) === 'OK';
 }
 
-module.exports = { visitorIp, requireCloudflare, safeEqual, admit, reserve, settle, acquireSlot, releaseSlot, firstTime, countWithExpiry, day, hour };
+/**
+ * Counts an off-topic or abusive reply against the visitor; past the limit they're paused
+ * for an hour and get a canned reply without a model call.
+ */
+async function strike(ip, kind, limitsByKind) {
+  const n = await countWithExpiry(`agent:strike:${kind}:${ip}`, 3600);
+  if (n >= limitsByKind[kind]) await redis.set(`agent:paused:${ip}`, kind, { EX: 3600 });
+}
+
+async function clearStrikes(ip, kind) {
+  await redis.del(`agent:strike:${kind}:${ip}`);
+}
+
+async function isPaused(ip) {
+  return Boolean(await redis.get(`agent:paused:${ip}`));
+}
+
+module.exports = { strike, clearStrikes, isPaused, visitorIp, requireCloudflare, safeEqual, admit, reserve, settle, acquireSlot, releaseSlot, firstTime, countWithExpiry, day, hour };
