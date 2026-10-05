@@ -161,7 +161,7 @@ async function agentChat(req, res) {
     if (question.length < JD_MIN_CHARS) reply.fit = { strong: [], discuss: [] };
     if (!reply.answer && !reply.fit.strong.length) reply.answer = 'Sorry, I couldn\'t answer that. Leave your email and Łukasz will reply himself.';
     // the model doesn't reliably ask on its own, so make sure the first answer does
-    if (genuine && !known && visitorTurn === 1 && !/\?\s*$/.test(reply.answer) && !/email/i.test(reply.answer)) reply.answer = `${reply.answer}\n\n${ASK_WHO}`;
+    if (genuine && !known && visitorTurn === 1 && !/\?\s*$/.test(reply.answer) && !/email/i.test(reply.answer)) reply.ask = ASK_WHO;
 
     const contactSaved = await record({ req, ip, body, question, reply: { ...reply, status: genuine ? 'ok' : reply.intent }, model: result.model, costUsd: result.costUsd, notifyNew: genuine });
     const { visitor, ...publicReply } = reply;
