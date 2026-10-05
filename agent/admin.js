@@ -46,7 +46,7 @@ dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0}dt{c
 .msg{padding:12px 14px;border-radius:10px;margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere}
 .user{background:#141A24;color:#E9EDF3}.assistant{background:#fff;border:1px solid #DDDAD2}
 .meta{font-size:12px;color:#5B6372;margin-top:6px}
-</style></head><body><main>${body}</main></body></html>`;
+</style></head><body><main><!--email_off-->${body}<!--/email_off--></main></body></html>`; // stop Cloudflare masking addresses
 
 async function list(req, res) {
   const convs = await store.list(200);
