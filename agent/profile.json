@@ -47,7 +47,8 @@
         "distributed systems",
         "quality built in"
       ],
-      "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after."
+      "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after.",
+      "label": "Parcelhero"
     },
     {
       "id": "dreamteam",
@@ -73,17 +74,18 @@
       "id": "kalman",
       "group": "now",
       "name": "Kalman",
-      "repo": "bondarewicz/kalman",
+      "repo": null,
       "url": null,
       "visibility": "private",
-      "meta": "private for now · 150 commits · TypeScript",
+      "meta": "150 commits · TypeScript",
       "tags": [
         "event log",
         "budgets",
         "human gates"
       ],
       "summary": "A software factory: issues in, gated and reviewed PRs out, with a human in exactly the places a human belongs. A simple scheduler over an append-only event log; all intelligence in fresh, budgeted agent sessions; all authority in human-committed config. Kill anything, restart it, and it resumes from the log.",
-      "context": "On my own time"
+      "context": "On my own time",
+      "label": "Private project"
     },
     {
       "id": "paka",
