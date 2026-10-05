@@ -4,6 +4,7 @@ const spec = require('./agent.json');
 const profile = require('./profile.json');
 const guard = require('./guard');
 const store = require('./store');
+const keys = require('./keys');
 const admin = require('./admin');
 const { answerSchema, normalise } = require('./schema');
 const { makeLeadHandler, saveLead, isEmail } = require('./lead');
@@ -83,7 +84,7 @@ async function record({ req, ip, body, question, reply, model, costUsd, notifyNe
     const { conv, isNew } = await store.recordTurn({ id: body.conversationId, req, ip, meta: body.meta, question, reply, model, costUsd });
     if (!conv) return false;
     // one "new conversation" push per visitor per hour, however many ids they make up
-    if (isNew && notifyNew && (await guard.firstTime(`agent:notified:${ip}:${guard.hour()}`, 3600))) {
+    if (isNew && notifyNew && (await guard.firstTime(keys.perVisitor('notified', ip), 3600))) {
       notify({ title: `New conversation · ${where(conv)}`, text: question.slice(0, 500), link: adminLink(conv.id), sendEmail: false });
     }
     const v = reply.visitor || {};

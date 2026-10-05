@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
-const { countWithExpiry, day } = require('./guard');
+const { countWithExpiry } = require('./guard');
+const keys = require('./keys');
 
 // Hard daily ceilings so nobody can flood the phone or inbox, whatever the request limits do.
 const PUSHES_PER_DAY = parseInt(process.env.NOTIFY_PUSHES_PER_DAY || '60', 10);
@@ -8,8 +9,9 @@ const EMAILS_PER_DAY = parseInt(process.env.NOTIFY_EMAILS_PER_DAY || '25', 10);
 // Visitor text ends up in notifications: drop control characters and keep it short.
 const clean = (s, n) => String(s || '').replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '').slice(0, n);
 
-async function underCap(kind, max) {
-  return (await countWithExpiry(`agent:notify:${kind}:${day()}`, 2 * 24 * 60 * 60)) <= max;
+// what: pushes or emails
+async function underCap(what, max) {
+  return (await countWithExpiry(keys.daily(what), 2 * 24 * 60 * 60)) <= max;
 }
 
 /**
@@ -70,8 +72,8 @@ async function email({ title, text, link }) {
 async function notify({ sendEmail = true, title, text, ...rest }) {
   const message = { ...rest, title: clean(title, 120).replace(/\n/g, ' '), text: clean(text, 1500) };
   const [pushed, emailed] = await Promise.all([
-    (await underCap('push', PUSHES_PER_DAY)) ? push(message) : false,
-    sendEmail && (await underCap('email', EMAILS_PER_DAY)) ? email(message) : false,
+    (await underCap('pushes', PUSHES_PER_DAY)) ? push(message) : false,
+    sendEmail && (await underCap('emails', EMAILS_PER_DAY)) ? email(message) : false,
   ]);
   return pushed || emailed;
 }

@@ -2,8 +2,10 @@ const crypto = require('crypto');
 const fetch = require('node-fetch');
 const { client: redis } = require('../redis');
 
-const INDEX = 'agent:convs';
-const key = (id) => `agent:conv:${id}`;
+const keys = require('./keys');
+
+const INDEX = keys.conversations;
+const key = keys.conversation;
 const ID_RE = /^[a-zA-Z0-9-]{8,64}$/;
 const MAX_MESSAGES = 200;
 const clip = (s, n) => String(s || '').trim().slice(0, n);

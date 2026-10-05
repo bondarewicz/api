@@ -1,5 +1,6 @@
 const { client: redis } = require('../redis');
 const store = require('./store');
+const keys = require('./keys');
 const { notify, adminLink, where } = require('./notify');
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
@@ -21,7 +22,7 @@ async function saveLead({ name, email, company, note, conversationId, ip, source
     ip,
     at: new Date().toISOString(),
   };
-  await redis.lPush('agent:leads', JSON.stringify(lead));
+  await redis.lPush(keys.leads, JSON.stringify(lead));
   const conv = lead.conversationId ? await store.get(lead.conversationId) : null;
   const lastQuestion = conv ? [...conv.messages].reverse().find((m) => m.role === 'user') : null;
   const notified = await notify({

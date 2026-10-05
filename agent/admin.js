@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const UAParser = require('ua-parser-js');
 const store = require('./store');
 const guard = require('./guard');
+const keys = require('./keys');
 const { client: redis } = require('../redis');
 
 const MAX_FAILURES_PER_HOUR = 10;
@@ -75,7 +76,7 @@ async function switchPanel() {
 async function requireAdmin(req, res, next) {
   const password = process.env.ADMIN_PASSWORD;
   if (!password) return res.status(404).end();
-  const failKey = `agent:adminfail:${guard.visitorIp(req)}:${guard.hour()}`;
+  const failKey = keys.perVisitor('admin-fail', guard.visitorIp(req));
   try {
     if (parseInt((await redis.get(failKey)) || '0', 10) >= MAX_FAILURES_PER_HOUR) {
       return res.status(429).send('Too many attempts, try again later');
@@ -262,7 +263,7 @@ function costPerLead(convs) {
 async function stats(convs) {
   const now = Date.now();
   const since = (ms) => convs.filter((c) => now - Date.parse(c.startedAt) < ms).length;
-  const spent = parseFloat((await redis.get(`agent:spend:${guard.day()}`)) || '0');
+  const spent = parseFloat((await redis.get(keys.spend())) || '0');
   const budget = parseFloat(process.env.AGENT_DAILY_BUDGET_USD || '0.5');
   return `<div class="stats">
 <div class="stat"><b>${since(86400000)}</b><span>conversations, last 24 h</span></div>

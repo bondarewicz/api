@@ -98,6 +98,18 @@ The limits without a variable live in `agent/agent.json`. On top of these, set a
 2. Railway variable `AGENT_ENABLED=false` (after a redeploy).
 3. Last resort: revoke the key in the Anthropic Console.
 
+### Redis keys
+
+All agent keys are defined in `agent/keys.js`, in three groups:
+
+| Prefix | What | Kept |
+|---|---|---|
+| `agent:data:` | `conversation:{id}`, `conversations` (index), `leads`, `killswitch` | 180 days or until deleted |
+| `agent:stats:` | `spend:{date}`, `chats:{date}`, `leads:{date}`, `pushes:{date}`, `emails:{date}` | 2 days |
+| `agent:limit:` | per-visitor counters (`chat`, `lead`, `notified`, `admin-fail` by hour), `strike:*`, `paused:*`, `inflight` | an hour or less |
+
+`visits:count` belongs to the playground.
+
 ## Configuration
 
 | Variable | Purpose |

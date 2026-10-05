@@ -1,8 +1,8 @@
 const crypto = require('crypto');
 const { client: redis } = require('../redis');
+const keys = require('./keys');
 
-const day = () => new Date().toISOString().slice(0, 10);
-const hour = () => Math.floor(Date.now() / 3600000);
+const { day, hour } = keys;
 const TWO_DAYS = 2 * 24 * 60 * 60;
 const IP_RE = /^[0-9a-fA-F:.]{2,45}$/;
 
@@ -44,10 +44,10 @@ async function countWithExpiry(key, ttlSeconds) {
  * The global cap bounds total work even if someone rotates IPs.
  */
 async function admit(scope, ip, { perIpPerHour, globalPerDay }) {
-  const perIp = await countWithExpiry(`agent:${scope}:ip:${ip}:${hour()}`, 3600);
+  const perIp = await countWithExpiry(keys.perVisitor(scope, ip), 3600);
   if (perIp > perIpPerHour) return { ok: false, status: 429, reason: 'visitor', remaining: 0 };
 
-  const global = await countWithExpiry(`agent:${scope}:day:${day()}`, TWO_DAYS);
+  const global = await countWithExpiry(keys.daily(`${scope}s`), TWO_DAYS);
   if (global > globalPerDay) return { ok: false, status: 503, reason: 'global', remaining: 0 };
 
   return { ok: true, remaining: perIpPerHour - perIp };
@@ -58,7 +58,7 @@ async function admit(scope, ip, { perIpPerHour, globalPerDay }) {
  * requests can't all slip under the budget; a reservation that would cross it is refunded.
  */
 async function reserve(usd, budget) {
-  const key = `agent:spend:${day()}`;
+  const key = keys.spend();
   const total = parseFloat(await redis.incrByFloat(key, usd));
   await redis.expire(key, TWO_DAYS);
   if (total > budget) {
@@ -71,24 +71,24 @@ async function reserve(usd, budget) {
 // Corrects a reservation once the real cost is known (or refunds it on failure).
 async function settle(deltaUsd) {
   if (!deltaUsd) return;
-  await redis.incrByFloat(`agent:spend:${day()}`, deltaUsd);
+  await redis.incrByFloat(keys.spend(), deltaUsd);
 }
 
 /**
  * Caps paid calls running at the same time. The key expires so a crash can't leak slots.
  */
 async function acquireSlot(max) {
-  const n = await countWithExpiry('agent:inflight', 120);
+  const n = await countWithExpiry(keys.inflight, 120);
   if (n > max) {
-    await redis.decr('agent:inflight');
+    await redis.decr(keys.inflight);
     return false;
   }
   return true;
 }
 
 async function releaseSlot() {
-  const n = await redis.decr('agent:inflight');
-  if (n < 0) await redis.set('agent:inflight', 0);
+  const n = await redis.decr(keys.inflight);
+  if (n < 0) await redis.set(keys.inflight, 0);
 }
 
 /**
@@ -103,16 +103,16 @@ async function firstTime(key, ttlSeconds) {
  * for an hour and get a canned reply without a model call.
  */
 async function strike(ip, kind, limitsByKind) {
-  const n = await countWithExpiry(`agent:strike:${kind}:${ip}`, 3600);
-  if (n >= limitsByKind[kind]) await redis.set(`agent:paused:${ip}`, kind, { EX: 3600 });
+  const n = await countWithExpiry(keys.strike(kind, ip), 3600);
+  if (n >= limitsByKind[kind]) await redis.set(keys.paused(ip), kind, { EX: 3600 });
 }
 
 async function clearStrikes(ip, kind) {
-  await redis.del(`agent:strike:${kind}:${ip}`);
+  await redis.del(keys.strike(kind, ip));
 }
 
 async function isPaused(ip) {
-  return Boolean(await redis.get(`agent:paused:${ip}`));
+  return Boolean(await redis.get(keys.paused(ip)));
 }
 
 /**
@@ -120,13 +120,13 @@ async function isPaused(ip) {
  * very next request without a redeploy.
  */
 async function killState() {
-  const raw = await redis.get('agent:killswitch');
+  const raw = await redis.get(keys.killswitch);
   return raw ? JSON.parse(raw) : null;
 }
 
 async function setKilled(on, by) {
-  if (on) await redis.set('agent:killswitch', JSON.stringify({ at: new Date().toISOString(), by }));
-  else await redis.del('agent:killswitch');
+  if (on) await redis.set(keys.killswitch, JSON.stringify({ at: new Date().toISOString(), by }));
+  else await redis.del(keys.killswitch);
 }
 
 module.exports = { killState, setKilled, strike, clearStrikes, isPaused, visitorIp, requireCloudflare, safeEqual, admit, reserve, settle, acquireSlot, releaseSlot, firstTime, countWithExpiry, day, hour };
