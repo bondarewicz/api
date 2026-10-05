@@ -21,7 +21,7 @@ const { fileUpload } = require('./routes');
 const { getReplay, postReplay} = require('./routes');
 const { postDelay } = require('./routes');
 const { qrCode, visits, weather } = require('./routes');
-const { agentChat, agentProfile, agentLead } = require('./agent');
+const { agentChat, agentProfile, agentLead, admin } = require('./agent');
 // 
 const apiRoutes = express.Router();
 const api = express();
@@ -550,6 +550,10 @@ apiRoutes.post('/agent/lead', agentLead);
  *         description: Profile JSON
  */
 apiRoutes.get('/agent/profile', agentProfile);
+
+// private conversation log (basic auth, ADMIN_PASSWORD); deliberately left out of the Swagger docs
+apiRoutes.get('/agent/admin', admin.requireAdmin, admin.list);
+apiRoutes.get('/agent/admin/c/:id', admin.requireAdmin, admin.detail);
 
 api.use('/v1', apiRoutes);
 module.exports = api;

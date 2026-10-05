@@ -19,8 +19,19 @@ function answerSchema(sourceIds) {
       sources: { type: 'array', items: { type: 'string', enum: sourceIds } },
       followups: { type: 'array', items: { type: 'string' } },
       offer_contact: { type: 'boolean' },
+      visitor: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          email: { type: 'string' },
+          company: { type: 'string' },
+          role: { type: 'string' },
+        },
+        required: ['name', 'email', 'company', 'role'],
+        additionalProperties: false,
+      },
     },
-    required: ['answer', 'fit', 'sources', 'followups', 'offer_contact'],
+    required: ['answer', 'fit', 'sources', 'followups', 'offer_contact', 'visitor'],
     additionalProperties: false,
   };
 }
@@ -35,6 +46,7 @@ function normalise(raw, sourceIds) {
     try { data = JSON.parse(raw); } catch { data = { answer: raw }; }
   }
   data = data || {};
+  const v = data.visitor || {};
   return {
     answer: clip(data.answer, 2000),
     fit: {
@@ -44,6 +56,7 @@ function normalise(raw, sourceIds) {
     sources: [...new Set(list(data.sources, 6, 40).filter((id) => sourceIds.includes(id)))],
     followups: list(data.followups, 2, 120),
     offer_contact: data.offer_contact === true,
+    visitor: { name: clip(v.name, 120), email: clip(v.email, 254), company: clip(v.company, 120), role: clip(v.role, 120) },
   };
 }
 
