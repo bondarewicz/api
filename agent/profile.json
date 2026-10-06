@@ -1,6 +1,6 @@
 {
   "name": "Łukasz Bondarewicz",
-  "positioning": "Founding engineer twice. Builds the first version of products, platforms and teams, and now brings AI into them where it actually helps.",
+  "positioning": "#1 engineer twice. Builds the first version of products, platforms and now brings AI into them where it actually helps.",
   "location": "Poland, open to remote",
   "availability": "He is finishing up in his current role and is looking for a new opportunity, ideally a remote senior engineer or tech lead role. He is also open to contract work.",
   "roles": [
@@ -27,8 +27,7 @@
     "CI/CD",
     "Cloud infrastructure",
     "Distributed systems",
-    "LLM evals",
-    "Swift"
+    "LLM evals"
   ],
   "projects": [
     {
@@ -40,11 +39,7 @@
       "url": null,
       "visibility": "private",
       "meta": "Technical Lead",
-      "tags": [
-        "AI in production",
-        "distributed systems",
-        "quality built in"
-      ],
+      "tags": ["AI in production", "distributed systems", "quality built in"],
       "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after.",
       "label": "Current role",
       "blurb": "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps."
@@ -60,11 +55,7 @@
       },
       "visibility": "public",
       "meta": "npm v1.4.1 · TypeScript",
-      "tags": [
-        "multi-agent",
-        "evals",
-        "provider-agnostic"
-      ],
+      "tags": ["multi-agent", "evals", "provider-agnostic"],
       "summary": "Seven specialised agents and an orchestrator that take a problem statement through domain rules, architecture, implementation, quality and scope review to reviewed, spec-backed code. Any agent runs on any provider (Claude, Codex or Ollama), and every agent's behaviour is schema-enforced and graded against an eval corpus.",
       "context": "On my own time",
       "blurb": "A team of specialised AI agents that takes a problem from domain rules to reviewed code, on any model provider, with every agent graded by evals.",
@@ -78,11 +69,7 @@
       "url": null,
       "visibility": "private",
       "meta": "150 commits · TypeScript",
-      "tags": [
-        "event log",
-        "budgets",
-        "human gates"
-      ],
+      "tags": ["event log", "budgets", "human gates"],
       "summary": "A software factory: issues in, gated and reviewed PRs out, with a human in exactly the places a human belongs. A simple scheduler over an append-only event log; all intelligence in fresh, budgeted agent sessions; all authority in human-committed config. Kill anything, restart it, and it resumes from the log.",
       "context": "On my own time",
       "label": "Private project",
@@ -187,11 +174,7 @@
       "field": "Information and Telecommunication"
     }
   ],
-  "sideProjects": [
-    "dreamteam",
-    "paka",
-    "poziomka"
-  ],
+  "sideProjects": ["dreamteam", "paka", "poziomka"],
   "principles": [
     {
       "title": "Measure the AI, don't vibe it.",
