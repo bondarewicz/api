@@ -208,22 +208,22 @@
     {
       "id": "zero-to-one",
       "title": "Build platforms from zero",
-      "text": "I set up the delivery pipelines and cloud infrastructure a new product needs, move monoliths to microservices, and take prototypes to product lines with real users."
+      "text": "I've set up the delivery pipelines and cloud infrastructure new products need, moved monoliths to microservices, and taken prototypes to product lines with real users."
     },
     {
       "id": "ai-in-production",
       "title": "Ship AI agents",
-      "text": "I've shipped agents and embeddings to production, backed by observability, and run experiments against real datasets to help with prompt engineering."
+      "text": "I've shipped agents and embeddings to production, backed by observability and by experiments against real datasets that help with prompt engineering."
     },
     {
       "id": "modernise",
       "title": "Modernise infrastructure",
-      "text": "I led the platform's move to Kubernetes, helped migrate it from GCP to Azure, and recently worked with the .NET stack."
+      "text": "I've led a platform's move to Kubernetes, helped migrate it from GCP to Azure, and recently worked with the .NET stack."
     },
     {
       "id": "direction",
       "title": "Help set technical direction",
-      "text": "I design distributed systems that stay up and scale when they need to, and champion the best practices that keep them reliable."
+      "text": "I've designed distributed systems that stay up and scale when they need to, and championed the best practices that keep them reliable."
     }
   ],
   "experienceTotal": "Nearly two decades"
