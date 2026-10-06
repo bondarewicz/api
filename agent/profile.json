@@ -195,7 +195,6 @@
   "careerNotes": [
     "Why he is leaving his current role: his time there has come to an end and he is looking for his next role. There is no other reason to give."
   ],
-  "peopleManagement": "In his recent roles he stayed hands-on by choice: he led technology choices and his own projects rather than managing people. Earlier in his career he was a Software Development Manager and helped junior developers find their feet as the team grew.",
   "recentEvidence": [
     "Over the last year he shipped AI agents and embeddings to production, backed by agent observability, and ran experiments against real datasets to help with prompt engineering.",
     "He brought AI into one of the core parts of the platform.",
@@ -203,7 +202,6 @@
     "He helped migrate the platform from GCP to Azure.",
     "He has recently worked with the .NET stack."
   ],
-  "titleReason": "In his recent roles he stayed hands-on by choice: as the first engineering hire he led technology decisions and his own projects instead of moving into people management. Earlier in his career he was a Software Development Manager.",
   "capabilities": [
     {
       "id": "zero-to-one",
