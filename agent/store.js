@@ -95,7 +95,7 @@ async function recordTurn({ id, req, ip, meta, question, reply, model, costUsd }
   conv.model = model || conv.model;
   conv.costUsd = (conv.costUsd || 0) + (costUsd || 0);
   conv.messages.push({ role: 'user', content: question, at: now });
-  conv.messages.push({ role: 'assistant', content: reply.ask ? `${reply.answer}\n\n${reply.ask}` : reply.answer, fit: reply.fit, sources: reply.sources, status: reply.status, at: now });
+  conv.messages.push({ role: 'assistant', content: reply.ask ? `${reply.answer}\n\n${reply.ask}` : reply.answer, fit: reply.fit, status: reply.status, at: now });
   await save(conv);
   return { conv, isNew };
 }

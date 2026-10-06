@@ -26,8 +26,7 @@ const promptProfile = {
   contact: { github: profile.contact.github, linkedin: profile.contact.linkedin },
 };
 const system = fs.readFileSync(path.join(__dirname, spec.system), 'utf8') + JSON.stringify(promptProfile, null, 2);
-const sourceIds = [...visible.map((p) => p.id), ...profile.experience.map((e) => e.id)];
-const schema = answerSchema(sourceIds);
+const schema = answerSchema();
 const limits = spec.limits;
 const JD_MIN_CHARS = 150;
 const ASK_WHO = 'By the way, who am I talking to? Share your name and the best email to reach you, and I\'ll make sure Łukasz gets back to you.';
@@ -82,7 +81,7 @@ function isVisitorQuestion(q) {
   return (/\b(he|his|him)\b/i.test(q) || /[łl]ukasz/i.test(q)) && !/\b(you|your|you're|yours)\b/i.test(q);
 }
 
-const emptyReply = (answer, status) => ({ answer, fit: { strong: [], discuss: [] }, sources: [], followups: [], offer_contact: true, visitor: {}, status });
+const emptyReply = (answer, status) => ({ answer, fit: { strong: [], discuss: [] }, followups: [], offer_contact: true, visitor: {}, status });
 
 /**
  * Saves the turn to the conversation log, notifies on a new conversation,
@@ -154,7 +153,7 @@ async function agentChat(req, res) {
     if (reserved) await guard.settle(result.costUsd - reserved);
     console.log(`agent: ${result.model} in=${result.usage.input} out=${result.usage.output} $${result.costUsd.toFixed(5)}`);
 
-    const reply = normalise(result.raw, sourceIds);
+    const reply = normalise(result.raw);
     // follow-ups become the visitor's next message when clicked, so they must be questions
     // about Łukasz, never the agent asking the visitor something ("What role are you hiring for?")
     reply.followups = reply.followups.filter(isVisitorQuestion);

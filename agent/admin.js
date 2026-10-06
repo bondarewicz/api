@@ -327,9 +327,8 @@ async function detail(req, res) {
     if (m.role === 'user') {
       return `<div class="who-label user">Visitor · ${esc(localTime(m.at))}</div><div class="msg user">${esc(m.content)}</div>`;
     }
-    const sources = (m.sources || []).map((s) => `<span class="chip">${esc(s)}</span>`).join('');
     const status = m.status && m.status !== 'ok' ? `<div class="status">${esc(STATUS[m.status] || m.status)}</div>` : '';
-    return `<div class="who-label">Agent</div><div class="msg assistant">${status}${esc(m.content)}${fitHtml(m.fit)}${sources ? `<div class="meta">${sources}</div>` : ''}</div>`;
+    return `<div class="who-label">Agent</div><div class="msg assistant">${status}${esc(m.content)}${fitHtml(m.fit)}</div>`;
   }).join('');
 
   res.send(page(`${who} · conversation`, `<a class="back" href="${BASE}">← All conversations</a>

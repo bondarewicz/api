@@ -46,7 +46,7 @@ POST /v1/agent/chat  { conversationId, meta, messages: [{ role, content }] }
   │  and repeated ones pause the visitor for an hour
   ├─ conversation recorded with IP, location, network, browser, referrer
   └─ contact details typed in chat become a lead → notification
-← { answer, ask, fit, sources, followups, offer_contact, intent, contact_saved, remaining }
+← { answer, ask, fit, followups, offer_contact, intent, contact_saved, remaining }
 ```
 
 ### Where the agent is defined
