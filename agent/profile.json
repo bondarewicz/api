@@ -197,7 +197,7 @@
   ],
   "peopleManagement": "In his recent roles he stayed hands-on by choice: he led technology choices and his own projects rather than managing people. Earlier in his career he was a Software Development Manager and helped junior developers find their feet as the team grew.",
   "recentEvidence": [
-    "Over the last year he shipped AI to production using LLMs and embeddings, backed by agent observability, and ran experiments against real datasets to help with prompt engineering.",
+    "Over the last year he shipped AI agents and embeddings to production, backed by agent observability, and ran experiments against real datasets to help with prompt engineering.",
     "He brought AI into one of the core parts of the platform.",
     "He led the platform's move to Kubernetes.",
     "He helped migrate the platform from GCP to Azure.",
@@ -212,8 +212,8 @@
     },
     {
       "id": "ai-in-production",
-      "title": "Introduce AI into production",
-      "text": "I've shipped LLMs and embeddings to production, backed by agent observability, and run experiments against real datasets to help with prompt engineering."
+      "title": "Ship AI agents",
+      "text": "I've shipped agents and embeddings to production, backed by observability, and run experiments against real datasets to help with prompt engineering."
     },
     {
       "id": "modernise",
