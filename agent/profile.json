@@ -216,6 +216,7 @@
   "peopleManagement": "No people management at ParcelVision or Parcelhero; there he led technology choices and his own projects. At Fastlane International he was Software Development Manager and helped junior developers find their feet as the team grew.",
   "recentEvidence": [
     "Over the last year he put AI into production using LLMs and embeddings, with evals and human review.",
+    "He brought AI into one of the core parts of the platform.",
     "He led the platform's move to Kubernetes.",
     "He helped migrate the platform from GCP to Azure.",
     "He works with current .NET versions."
