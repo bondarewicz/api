@@ -1,8 +1,8 @@
 {
   "name": "Łukasz Bondarewicz",
-  "positioning": "Founding engineer twice. Builds the first version of products, platforms and teams, and now the agent systems that build alongside them, measured with evals.",
+  "positioning": "Founding engineer twice. Builds the first version of products, platforms and teams, and now brings AI into them where it actually helps.",
   "location": "Poland, open to remote",
-  "availability": "He is finishing up at Parcelhero and is looking for a new opportunity, ideally a remote senior engineer or tech lead role. He is also open to contract work.",
+  "availability": "He is finishing up in his current role and is looking for a new opportunity, ideally a remote senior engineer or tech lead role. He is also open to contract work.",
   "roles": [
     "Staff / Principal Engineer",
     "Founding Engineer",
@@ -32,21 +32,21 @@
   ],
   "projects": [
     {
-      "id": "parcelhero-ai",
+      "id": "ai-in-production",
       "group": "now",
       "context": "At work",
-      "name": "AI at Parcelhero",
+      "name": "AI in production",
       "repo": null,
       "url": null,
       "visibility": "private",
-      "meta": "Technical Lead · since 2024",
+      "meta": "Technical Lead",
       "tags": [
         "AI in production",
         "distributed systems",
         "quality built in"
       ],
       "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after.",
-      "label": "Parcelhero",
+      "label": "Current role",
       "blurb": "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps."
     },
     {
@@ -210,10 +210,10 @@
     }
   ],
   "careerNotes": [
-    "ParcelVision was acquired by Parcelhero. From April 2024 Łukasz continued on the same platform and with the same team as Technical Lead, so his time on that platform is one continuous stretch of about 13 years, starting in 2013. Someone saying '13 years at Parcelhero' is describing this correctly.",
-    "Why he is leaving Parcelhero: his time there has come to an end and he is looking for his next role. There is no other reason to give."
+    "His current role continued the same platform and team after the company that first hired him was acquired, so his time on that platform is one continuous stretch of more than a decade. If a visitor describes it as one long stretch, that's correct.",
+    "Why he is leaving his current role: his time there has come to an end and he is looking for his next role. There is no other reason to give."
   ],
-  "peopleManagement": "No people management at ParcelVision or Parcelhero; there he led technology choices and his own projects. At Fastlane International he was Software Development Manager and helped junior developers find their feet as the team grew.",
+  "peopleManagement": "In his recent roles he stayed hands-on by choice: he led technology choices and his own projects rather than managing people. Earlier in his career he was a Software Development Manager and helped junior developers find their feet as the team grew.",
   "recentEvidence": [
     "Over the last year he put AI into production using LLMs and embeddings, backed by observability, evals and experiments.",
     "He brought AI into one of the core parts of the platform.",
@@ -221,7 +221,7 @@
     "He helped migrate the platform from GCP to Azure.",
     "He works with current .NET versions."
   ],
-  "titleReason": "At ParcelVision and Parcelhero he stayed hands-on by choice: as the first engineering hire there he led technology decisions and his own projects instead of moving into people management. (At Fastlane International, earlier, he was Software Development Manager.)",
+  "titleReason": "In his recent roles he stayed hands-on by choice: as the first engineering hire he led technology decisions and his own projects instead of moving into people management. Earlier in his career he was a Software Development Manager.",
   "capabilities": [
     {
       "id": "zero-to-one",
@@ -243,5 +243,6 @@
       "title": "Set technical direction",
       "text": "I design distributed systems that stay up and scale when they need to, and build a culture where quality is built in from the start, not patched in after."
     }
-  ]
+  ],
+  "experienceTotal": "Nearly two decades"
 }

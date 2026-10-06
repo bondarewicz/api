@@ -55,7 +55,7 @@ POST /v1/agent/chat  { conversationId, meta, messages: [{ role, content }] }
 |---|---|
 | `agent/agent.json` | Models per provider, Claude prices (for budget tracking) and every limit |
 | `agent/system.md` | Behaviour and rules: grounding, tone, what never to share or invent |
-| `agent/profile.json` | Everything the agent knows: positioning, availability, roles, projects, experience, approved facts. Also copied to `bondarewicz/com/src/profile.json`, which renders the site; keep both in sync |
+| `agent/profile.json` | Everything the agent knows: positioning, availability, roles, projects, experience, approved facts. The agent never names employers or dates (those are on LinkedIn): `agent/index.js` strips them from experience before building the prompt. The site copies only the capabilities and links with `npm run sync-profile` |
 | `agent/schema.js` | The structured reply every provider must return |
 | `agent/index.js` | Builds the prompt (system.md + profile + today's date and conversation state), picks the provider, enforces post-processing (no em dashes, visitor-side follow-ups, fit reports only for job descriptions) |
 | `agent/providers/` | Claude (`@anthropic-ai/sdk`) and Ollama |
