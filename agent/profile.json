@@ -215,7 +215,7 @@
   ],
   "peopleManagement": "No people management at ParcelVision or Parcelhero; there he led technology choices and his own projects. At Fastlane International he was Software Development Manager and helped junior developers find their feet as the team grew.",
   "recentEvidence": [
-    "Over the last year he put AI into production using LLMs and embeddings, with evals and human review.",
+    "Over the last year he put AI into production using LLMs and embeddings, backed by observability, evals and experiments.",
     "He brought AI into one of the core parts of the platform.",
     "He led the platform's move to Kubernetes.",
     "He helped migrate the platform from GCP to Azure.",
@@ -231,7 +231,7 @@
     {
       "id": "ai-in-production",
       "title": "Put AI into production",
-      "text": "I bring AI into how teams build and ship. I've put LLMs and embeddings into production, with evals and human review."
+      "text": "I bring AI into how teams build and ship. I've put LLMs and embeddings into production, backed by observability, evals and experiments."
     },
     {
       "id": "modernise",
