@@ -14,10 +14,19 @@ const providers = {
   anthropic: require('./providers/anthropic'),
 };
 
+// projects marked public: false stay out of the agent's knowledge until they're ready to show
+const visible = profile.projects.filter((p) => p.public !== false);
+const visibleIds = new Set(visible.map((p) => p.id));
 // the model only gets public links, never an email address it could hand out
-const promptProfile = { ...profile, contact: { github: profile.contact.github, npm: profile.contact.npm } };
+const promptProfile = {
+  ...profile,
+  projects: visible,
+  principles: (profile.principles || []).filter((pr) => visibleIds.has(pr.project)),
+  sideProjects: (profile.sideProjects || []).filter((id) => visibleIds.has(id)),
+  contact: { github: profile.contact.github, linkedin: profile.contact.linkedin },
+};
 const system = fs.readFileSync(path.join(__dirname, spec.system), 'utf8') + JSON.stringify(promptProfile, null, 2);
-const sourceIds = [...profile.projects.map((p) => p.id), ...profile.experience.map((e) => e.id)];
+const sourceIds = [...visible.map((p) => p.id), ...profile.experience.map((e) => e.id)];
 const schema = answerSchema(sourceIds);
 const limits = spec.limits;
 const JD_MIN_CHARS = 150;
@@ -176,7 +185,7 @@ async function agentChat(req, res) {
 }
 
 function agentProfile(req, res) {
-  res.json(profile);
+  res.json(promptProfile); // public part only: no private projects, no email
 }
 
 const agentLead = makeLeadHandler({ visitorIp: guard.visitorIp, admit: guard.admit, limits });

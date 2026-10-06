@@ -13,7 +13,7 @@
   ],
   "contact": {
     "github": "https://github.com/bondarewicz",
-    "linkedin": "https://www.linkedin.com/in/[YOUR-HANDLE]",
+    "linkedin": "https://www.linkedin.com/in/bondarewicz/",
     "npm": "https://www.npmjs.com/package/@bondarewicz/dreamteam"
   },
   "skills": [
@@ -27,7 +27,6 @@
     "CI/CD",
     "Cloud infrastructure",
     "Distributed systems",
-    "Multi-agent systems",
     "LLM evals",
     "Swift"
   ],
@@ -68,7 +67,8 @@
       ],
       "summary": "Seven specialised agents and an orchestrator that take a problem statement through domain rules, architecture, implementation, quality and scope review to reviewed, spec-backed code. Any agent runs on any provider (Claude, Codex or Ollama), and every agent's behaviour is schema-enforced and graded against an eval corpus.",
       "context": "On my own time",
-      "blurb": "A team of specialised AI agents that takes a problem from domain rules to reviewed code, on any model provider, with every agent graded by evals."
+      "blurb": "A team of specialised AI agents that takes a problem from domain rules to reviewed code, on any model provider, with every agent graded by evals.",
+      "public": false
     },
     {
       "id": "kalman",
@@ -86,7 +86,8 @@
       "summary": "A software factory: issues in, gated and reviewed PRs out, with a human in exactly the places a human belongs. A simple scheduler over an append-only event log; all intelligence in fresh, budgeted agent sessions; all authority in human-committed config. Kill anything, restart it, and it resumes from the log.",
       "context": "On my own time",
       "label": "Private project",
-      "blurb": "A software factory: issues in, reviewed pull requests out. Agents do the work in budgeted sessions; humans hold the gates."
+      "blurb": "A software factory: issues in, reviewed pull requests out. Agents do the work in budgeted sessions; humans hold the gates.",
+      "public": false
     },
     {
       "id": "paka",
@@ -96,7 +97,8 @@
       "url": null,
       "visibility": "private",
       "meta": "TypeScript · 3D · logistics",
-      "summary": "A 3D pallet packing visualiser: upload a CSV of boxes, choose a pallet type and see how the boxes stack, rotatable in 3D."
+      "summary": "A 3D pallet packing visualiser: upload a CSV of boxes, choose a pallet type and see how the boxes stack, rotatable in 3D.",
+      "public": false
     },
     {
       "id": "poziomka",
@@ -106,7 +108,8 @@
       "url": null,
       "visibility": "private",
       "meta": "Swift · Bluetooth · hardware",
-      "summary": "An iOS and macOS app that connects to a Bluetooth inclinometer and shows live roll and pitch."
+      "summary": "An iOS and macOS app that connects to a Bluetooth inclinometer and shows live roll and pitch.",
+      "public": false
     },
     {
       "id": "forklift",
@@ -116,7 +119,8 @@
       "url": "https://github.com/bondarewicz/forklift",
       "visibility": "public",
       "meta": "C# · .NET Aspire",
-      "summary": "One .NET Aspire command lifts a full local stack: PostgreSQL, MongoDB, Redis, RabbitMQ, EventStoreDB and Unleash, each with its UI."
+      "summary": "One .NET Aspire command lifts a full local stack: PostgreSQL, MongoDB, Redis, RabbitMQ, EventStoreDB and Unleash, each with its UI.",
+      "public": false
     },
     {
       "id": "site",
@@ -126,7 +130,8 @@
       "url": "https://github.com/bondarewicz/com",
       "visibility": "public",
       "meta": "React · Node",
-      "summary": "This site and its API. The assistant runs on a free local model in development and on Claude with a hard daily budget in production."
+      "summary": "This site and its API. The assistant runs on a free local model in development and on Claude with a hard daily budget in production.",
+      "public": false
     }
   ],
   "experience": [
@@ -215,5 +220,27 @@
     "He helped migrate the platform from GCP to Azure.",
     "He works with current .NET versions."
   ],
-  "titleReason": "At ParcelVision and Parcelhero he stayed hands-on by choice: as the first engineering hire there he led technology decisions and his own projects instead of moving into people management. (At Fastlane International, earlier, he was Software Development Manager.)"
+  "titleReason": "At ParcelVision and Parcelhero he stayed hands-on by choice: as the first engineering hire there he led technology decisions and his own projects instead of moving into people management. (At Fastlane International, earlier, he was Software Development Manager.)",
+  "capabilities": [
+    {
+      "id": "zero-to-one",
+      "title": "Build platforms from zero",
+      "text": "I set up the delivery pipelines and cloud infrastructure a new product needs, move monoliths to microservices, and take prototypes to product lines with real users."
+    },
+    {
+      "id": "ai-in-production",
+      "title": "Put AI into production",
+      "text": "I bring AI into how teams build and ship. I've put LLMs and embeddings into production, with evals and human review."
+    },
+    {
+      "id": "modernise",
+      "title": "Modernise infrastructure",
+      "text": "I led the platform's move to Kubernetes, helped migrate it from GCP to Azure, and work with current .NET versions."
+    },
+    {
+      "id": "direction",
+      "title": "Set technical direction",
+      "text": "I design distributed systems that stay up and scale when they need to, and build a culture where quality is built in from the start, not patched in after."
+    }
+  ]
 }
