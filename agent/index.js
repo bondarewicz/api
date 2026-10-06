@@ -25,7 +25,7 @@ const promptProfile = {
   sideProjects: (profile.sideProjects || []).filter((id) => visibleIds.has(id)),
   contact: { github: profile.contact.github, linkedin: profile.contact.linkedin },
   // the site is about him, not his employers: no company names or dates (those are on LinkedIn)
-  experience: profile.experience.map(({ id, title, summary }, i) => ({ id, when: ['Current role, finishing up', 'Previous role', 'Earlier role'][i] || 'Earlier role', title, summary })),
+  experience: profile.experience.map(({ title, summary }, i) => ({ when: ['Current role, finishing up', 'Previous role', 'Earlier role'][i] || 'Earlier role', title, summary })),
 };
 const system = fs.readFileSync(path.join(__dirname, spec.system), 'utf8') + JSON.stringify(promptProfile, null, 2);
 const schema = answerSchema();
