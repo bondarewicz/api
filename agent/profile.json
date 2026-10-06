@@ -41,12 +41,11 @@
       "meta": "Technical Lead",
       "tags": [
         "AI in production",
-        "distributed systems",
-        "quality built in"
+        "distributed systems"
       ],
-      "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after.",
+      "summary": "Architecting distributed systems that stay up and scale when they need to.",
       "label": "Current role",
-      "blurb": "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps."
+      "blurb": "Helping set technical direction and bringing AI into production, where it actually helps."
     },
     {
       "id": "dreamteam",
@@ -138,9 +137,9 @@
       "when": "Current role, finishing up",
       "title": "Technical Lead",
       "summary": [
-        "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps.",
-        "Architecting distributed systems that stay up and scale when they need to.",
-        "Creating a culture where quality is built in from the start, not patched in after."
+        "Helping set technical direction by championing best practices.",
+        "Bringing AI into production, where it actually helps.",
+        "Architecting distributed systems that stay up and scale when they need to."
       ]
     },
     {
@@ -202,7 +201,7 @@
     "He brought AI into one of the core parts of the platform.",
     "He led the platform's move to Kubernetes.",
     "He helped migrate the platform from GCP to Azure.",
-    "He works with .NET stack."
+    "He has recently worked with the .NET stack."
   ],
   "titleReason": "In his recent roles he stayed hands-on by choice: as the first engineering hire he led technology decisions and his own projects instead of moving into people management. Earlier in his career he was a Software Development Manager.",
   "capabilities": [
@@ -219,12 +218,12 @@
     {
       "id": "modernise",
       "title": "Modernise infrastructure",
-      "text": "I led the platform's move to Kubernetes, helped migrate it from GCP to Azure, and work with current .NET versions."
+      "text": "I led the platform's move to Kubernetes, helped migrate it from GCP to Azure, and recently worked with the .NET stack."
     },
     {
       "id": "direction",
-      "title": "Set technical direction",
-      "text": "I design distributed systems that stay up and scale when they need to, and build a culture where quality is built in from the start, not patched in after."
+      "title": "Help set technical direction",
+      "text": "I design distributed systems that stay up and scale when they need to, and champion the best practices that keep them reliable."
     }
   ],
   "experienceTotal": "Nearly two decades"
