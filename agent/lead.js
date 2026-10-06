@@ -2,7 +2,6 @@ const { client: redis } = require('../redis');
 const store = require('./store');
 const keys = require('./keys');
 const { notify, adminLink, where } = require('./notify');
-const analytics = require('./analytics');
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const clip = (s, n) => String(s || '').trim().slice(0, n);
@@ -53,7 +52,6 @@ function makeLeadHandler({ visitorIp, admit, limits }) {
 
       if (body.conversationId) await store.setVisitor(body.conversationId, { name: body.name, email: body.email, note: body.note }, ip);
       const notified = await saveLead({ ...body, ip, source: 'form' });
-      analytics.track(req, body.conversationId, 'Lead', 'form');
       res.json({ ok: true, notified });
     } catch (err) {
       console.error('lead error', err);

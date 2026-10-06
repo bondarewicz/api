@@ -63,7 +63,6 @@ POST /v1/agent/chat  { conversationId, meta, messages: [{ role, content }] }
 | `agent/store.js` | Conversation log in Redis (bound to the IP that started it) |
 | `agent/lead.js`, `agent/notify.js` | Leads and notifications (ntfy push + Resend email) |
 | `agent/admin.js` | Admin pages and kill switch |
-| `agent/analytics.js` | Conversation events for Matomo (see "Analytics") |
 
 Edit those files and push to `master` to change the agent. If you change `profile.json`, copy it to the site repo too.
 
@@ -131,30 +130,12 @@ All agent keys are defined in `agent/keys.js`, in three groups:
 | `LEAD_WEBHOOK_URL` | Push notifications: an ntfy.sh topic URL, or a Slack/Discord webhook |
 | `RESEND_API_KEY`, `NOTIFY_EMAIL`, `NOTIFY_FROM` | Lead emails via Resend (`NOTIFY_FROM` must be on a verified domain) |
 | `NOTIFY_PUSHES_PER_DAY`, `NOTIFY_EMAILS_PER_DAY` | Notification caps |
-| `MATOMO_URL`, `MATOMO_SITE_ID` | Matomo for conversation events (`https://stats.bondarewicz.com`, `1`); unset sends nothing |
 | `PUBLIC_API_URL` | Base used for admin links in notifications (default `https://api.bondarewicz.com/v1`) |
 | `API_HOSTNAME`, `GITHUB_TOKEN` | Playground: base URL in some responses; token for the `/version` GitHub lookup |
 
-## Analytics
-
-Visit stats run on a self-hosted [Matomo](https://matomo.org) at [stats.bondarewicz.com](https://stats.bondarewicz.com) (Railway services `matomo` and `mariadb`, EU West, behind Cloudflare). The site loads its tracker without cookies; the API adds conversation events with the Tracking HTTP API, category **Assistant**:
-
-| Event | Name | Value |
-|---|---|---|
-| Conversation started | where the visitor came from (host only, or `direct`) | |
-| Question | `genuine`, `off_topic` or `abusive` | the visitor's message number |
-| Job description | | strong matches in the fit report |
-| Asked who they are | | |
-| Lead | `chat` or `form` | |
-| Paused, Resting, Over limit | the limit hit (`visitor` or `site`) | |
-
-Each conversation is its own visit under a one-way hash of its id. Events never carry message text, names, email addresses or IPs; those stay in Redis and on the admin page.
-
-Matomo settings that keep this consent-free (CNIL exemption): IPs anonymised by 2 bytes, visits log and visitor profile turned off, raw data deleted after 13 months, reports kept 25 months. Its `config.ini.php` (on the volume) trusts `stats.bondarewicz.com` and reads the visitor IP from Cloudflare's `CF-Connecting-IP`.
-
 ## Data and privacy
 
-Conversations (with IP, approximate location, network, browser and referrer) are stored in Redis for `AGENT_RETENTION_DAYS` and visible only on the admin page; the site tells visitors that conversations are saved. Matomo receives only the events above. Leads are kept until deleted. The agent never sees or shares an email address for Łukasz.
+Conversations (with IP, approximate location, network, browser and referrer) are stored in Redis for `AGENT_RETENTION_DAYS` and visible only on the admin page; the site tells visitors that conversations are saved. Leads are kept until deleted. The agent never sees or shares an email address for Łukasz.
 
 ## Playground notes
 

@@ -9,7 +9,6 @@ const admin = require('./admin');
 const { answerSchema, normalise } = require('./schema');
 const { makeLeadHandler, saveLead, isEmail } = require('./lead');
 const { notify, adminLink, where } = require('./notify');
-const analytics = require('./analytics');
 const providers = {
   ollama: require('./providers/ollama'),
   anthropic: require('./providers/anthropic'),
@@ -93,7 +92,6 @@ async function record({ req, ip, body, question, reply, model, costUsd, notifyNe
   try {
     const { conv, isNew } = await store.recordTurn({ id: body.conversationId, req, ip, meta: body.meta, question, reply, model, costUsd });
     if (!conv) return false;
-    if (isNew) analytics.track(req, conv.id, 'Conversation started', analytics.source(body.meta));
     // one "new conversation" push per visitor per hour, however many ids they make up
     if (isNew && notifyNew && (await guard.firstTime(keys.perVisitor('notified', ip), 3600))) {
       notify({ title: `New conversation · ${where(conv)}`, text: question.slice(0, 500), link: adminLink(conv.id), sendEmail: false });
@@ -101,7 +99,6 @@ async function record({ req, ip, body, question, reply, model, costUsd, notifyNe
     const v = reply.visitor || {};
     if (isEmail(v.email) && (await store.setVisitor(conv.id, { name: v.name, email: v.email, company: v.company, role: v.role }, ip))) {
       await saveLead({ name: v.name, email: v.email, company: v.company, note: v.role, conversationId: conv.id, ip, source: 'chat' });
-      analytics.track(req, conv.id, 'Lead', 'chat');
       return true;
     }
   } catch (err) {
@@ -120,7 +117,6 @@ async function agentChat(req, res) {
   const question = messages[messages.length - 1].content;
   try {
     if (await guard.isPaused(ip)) {
-      analytics.track(req, body.conversationId, 'Paused');
       return res.status(429).json({ error: 'paused', answer: PAUSED, offer_contact: false, remaining: 0 });
     }
     const admitted = await guard.admit('chat', ip, limits);
@@ -129,7 +125,6 @@ async function agentChat(req, res) {
         ? `That's a lot of questions for one hour. Try again later, or leave your email below.`
         : RESTING;
       // over a limit: answer without recording or notifying, so the limits can't be used to flood
-      analytics.track(req, body.conversationId, 'Over limit', admitted.reason);
       return res.status(admitted.status).json({ error: admitted.reason, answer, offer_contact: true, remaining: 0 });
     }
 
@@ -143,7 +138,6 @@ async function agentChat(req, res) {
     const picked = await pickProvider(system + state, turnMessages);
     if (!picked) {
       await record({ req, ip, body, question, reply: emptyReply(RESTING, 'resting') });
-      analytics.track(req, body.conversationId, 'Resting');
       return res.status(503).json({ error: 'resting', answer: RESTING, offer_contact: true, remaining: admitted.remaining });
     }
     const { name, reserved } = picked;
@@ -181,9 +175,6 @@ async function agentChat(req, res) {
     if (genuine && !known && visitorTurn === 1 && !/\?\s*$/.test(reply.answer) && !/email/i.test(reply.answer)) reply.ask = ASK_WHO;
 
     const contactSaved = await record({ req, ip, body, question, reply: { ...reply, status: genuine ? 'ok' : reply.intent }, model: result.model, costUsd: result.costUsd, notifyNew: genuine });
-    analytics.track(req, body.conversationId, 'Question', reply.intent, visitorTurn);
-    if (reply.fit.strong.length) analytics.track(req, body.conversationId, 'Job description', null, reply.fit.strong.length);
-    if (reply.ask) analytics.track(req, body.conversationId, 'Asked who they are');
     const { visitor, ...publicReply } = reply;
     res.json({ ...publicReply, contact_saved: contactSaved, remaining: admitted.remaining });
   } catch (err) {
