@@ -39,7 +39,11 @@
       "url": null,
       "visibility": "private",
       "meta": "Technical Lead",
-      "tags": ["AI in production", "distributed systems", "quality built in"],
+      "tags": [
+        "AI in production",
+        "distributed systems",
+        "quality built in"
+      ],
       "summary": "Architecting distributed systems that stay up and scale when they need to. Creating a culture where quality is built in from the start, not patched in after.",
       "label": "Current role",
       "blurb": "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps."
@@ -55,7 +59,11 @@
       },
       "visibility": "public",
       "meta": "npm v1.4.1 · TypeScript",
-      "tags": ["multi-agent", "evals", "provider-agnostic"],
+      "tags": [
+        "multi-agent",
+        "evals",
+        "provider-agnostic"
+      ],
       "summary": "Seven specialised agents and an orchestrator that take a problem statement through domain rules, architecture, implementation, quality and scope review to reviewed, spec-backed code. Any agent runs on any provider (Claude, Codex or Ollama), and every agent's behaviour is schema-enforced and graded against an eval corpus.",
       "context": "On my own time",
       "blurb": "A team of specialised AI agents that takes a problem from domain rules to reviewed code, on any model provider, with every agent graded by evals.",
@@ -69,7 +77,11 @@
       "url": null,
       "visibility": "private",
       "meta": "150 commits · TypeScript",
-      "tags": ["event log", "budgets", "human gates"],
+      "tags": [
+        "event log",
+        "budgets",
+        "human gates"
+      ],
       "summary": "A software factory: issues in, gated and reviewed PRs out, with a human in exactly the places a human belongs. A simple scheduler over an append-only event log; all intelligence in fresh, budgeted agent sessions; all authority in human-committed config. Kill anything, restart it, and it resumes from the log.",
       "context": "On my own time",
       "label": "Private project",
@@ -123,49 +135,34 @@
   ],
   "experience": [
     {
-      "id": "parcelhero",
+      "when": "Current role, finishing up",
       "title": "Technical Lead",
-      "company": "Parcelhero",
-      "start": "2024-04",
-      "end": null,
-      "short": "Same platform and team as ParcelVision, now finishing up",
       "summary": [
         "Setting technical direction and bringing AI into how the team builds and ships, where it actually helps.",
         "Architecting distributed systems that stay up and scale when they need to.",
         "Creating a culture where quality is built in from the start, not patched in after."
-      ],
-      "duration": "since April 2024"
+      ]
     },
     {
-      "id": "parcelvision",
+      "when": "Previous role",
       "title": "Full Stack Engineer",
-      "company": "ParcelVision",
-      "start": "2013-09",
-      "end": "2024-04",
-      "short": "Engineer #1: monolith to microservices, prototypes to product lines",
       "summary": [
         "Engineering hire #1.",
         "Built the technical foundation from scratch: CI/CD pipelines, cloud infrastructure, the move from monolith to microservices.",
         "Took SaaS products from early prototypes to full product lines shipping to real users.",
         "Went from same-day deploys being a dream to being the default.",
         "Designed infrastructure that scaled with demand without scaling the cost."
-      ],
-      "duration": "10 years 8 months"
+      ]
     },
     {
-      "id": "fastlane",
+      "when": "Earlier role",
       "title": "Software Development Manager",
-      "company": "Fastlane International",
-      "start": "2007-12",
-      "end": "2013-09",
-      "short": "Engineer #1: concept to working business",
       "summary": [
         "Engineering hire #1. Built the technical side from the ground up.",
         "Took products from early concepts to working business in logistics and software.",
         "Bridged the gap between dev and the rest of the company, making sure what was built matched what the business needed.",
         "Designed logistics platforms that held up under real pressure, led UI/UX for web and early mobile, and helped junior devs find their feet as the team grew."
-      ],
-      "duration": "5 years 10 months"
+      ]
     }
   ],
   "education": [
@@ -174,7 +171,11 @@
       "field": "Information and Telecommunication"
     }
   ],
-  "sideProjects": ["dreamteam", "paka", "poziomka"],
+  "sideProjects": [
+    "dreamteam",
+    "paka",
+    "poziomka"
+  ],
   "principles": [
     {
       "title": "Measure the AI, don't vibe it.",
@@ -193,7 +194,6 @@
     }
   ],
   "careerNotes": [
-    "His current role continued the same platform and team after the company that first hired him was acquired, so his time on that platform is one continuous stretch of more than a decade. If a visitor describes it as one long stretch, that's correct.",
     "Why he is leaving his current role: his time there has come to an end and he is looking for his next role. There is no other reason to give."
   ],
   "peopleManagement": "In his recent roles he stayed hands-on by choice: he led technology choices and his own projects rather than managing people. Earlier in his career he was a Software Development Manager and helped junior developers find their feet as the team grew.",
@@ -202,7 +202,7 @@
     "He brought AI into one of the core parts of the platform.",
     "He led the platform's move to Kubernetes.",
     "He helped migrate the platform from GCP to Azure.",
-    "He works with current .NET versions."
+    "He works with .NET stack."
   ],
   "titleReason": "In his recent roles he stayed hands-on by choice: as the first engineering hire he led technology decisions and his own projects instead of moving into people management. Earlier in his career he was a Software Development Manager.",
   "capabilities": [
