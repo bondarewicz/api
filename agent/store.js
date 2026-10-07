@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const fetch = require('node-fetch');
 const { client: redis } = require('../redis');
 
 const keys = require('./keys');
@@ -14,31 +13,14 @@ function retentionSeconds() {
   return parseInt(process.env.AGENT_RETENTION_DAYS || '180', 10) * 24 * 60 * 60;
 }
 
-// Cloudflare sends the country always and city/region when visitor location headers are on;
-// otherwise fall back to ip-api (the same lookup the /ip endpoint uses).
-async function lookupGeo(req, ip) {
-  const geo = {
+// Location comes from Cloudflare's headers only: the country always, city and region when
+// visitor location headers are on. No third-party lookup, so the IP never leaves our servers.
+function lookupGeo(req) {
+  return {
     country: req.headers['cf-ipcountry'] || '',
     city: req.headers['cf-ipcity'] || '',
     region: req.headers['cf-region'] || '',
-    org: '',
   };
-  if (geo.city && geo.org) return geo;
-  try {
-    const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(), 2000);
-    const r = await fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode,regionName,city,isp,org`, { signal: abort.signal });
-    clearTimeout(timer);
-    const d = await r.json();
-    if (d.status === 'success') {
-      geo.country = geo.country || d.countryCode;
-      geo.countryName = d.country;
-      geo.city = geo.city || d.city;
-      geo.region = geo.region || d.regionName;
-      geo.org = d.org || d.isp || '';
-    }
-  } catch (err) { /* geo is best effort */ }
-  return geo;
 }
 
 async function get(id) {
@@ -79,7 +61,7 @@ async function recordTurn({ id, req, ip, meta, question, reply, model, costUsd }
       id,
       startedAt: now,
       ip,
-      geo: await lookupGeo(req, ip),
+      geo: lookupGeo(req),
       userAgent: clip(req.headers['user-agent'], 300),
       referrer: clip(m.referrer, 500),
       landing: clip(m.landing, 500),
@@ -132,4 +114,42 @@ async function visitorKnown(id, ip) {
   return Boolean(conv && conv.visitor.email);
 }
 
-module.exports = { recordTurn, setVisitor, visitorKnown, get, list, ID_RE };
+/**
+ * Deletes a conversation and any leads that came from it. For visitors asking for their data to go.
+ */
+async function remove(id) {
+  if (!ID_RE.test(id || '')) return false;
+  const existed = await redis.del(key(id));
+  await redis.zRem(INDEX, id);
+  await removeLeads((lead) => lead.conversationId === id);
+  return existed > 0;
+}
+
+/**
+ * Deletes leads matching `match`. Returns how many went.
+ */
+async function removeLeads(match) {
+  let removed = 0;
+  for (const raw of await redis.lRange(keys.leads, 0, -1)) {
+    let lead;
+    try { lead = JSON.parse(raw); } catch { continue; }
+    if (match(lead)) removed += await redis.lRem(keys.leads, 0, raw);
+  }
+  return removed;
+}
+
+/**
+ * Ids of every stored conversation where the visitor gave this email.
+ */
+async function idsByEmail(email) {
+  const want = String(email || '').trim().toLowerCase();
+  if (!want) return [];
+  const ids = [];
+  for (const id of await redis.zRange(INDEX, 0, -1)) {
+    const c = await get(id);
+    if (c && String(c.visitor?.email || '').toLowerCase() === want) ids.push(id);
+  }
+  return ids;
+}
+
+module.exports = { recordTurn, setVisitor, visitorKnown, get, list, remove, removeLeads, idsByEmail, ID_RE };

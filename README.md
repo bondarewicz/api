@@ -63,8 +63,8 @@ POST /v1/agent/chat  { conversationId, meta, messages: [{ role, content }] }
 | `agent/providers/` | Claude (`@anthropic-ai/sdk`) and Ollama |
 | `agent/guard.js` | Rate limits, budget reservation, concurrency slots, strikes and pauses, kill switch, visitor IP |
 | `agent/store.js` | Conversation log in Redis (bound to the IP that started it) |
-| `agent/lead.js`, `agent/notify.js` | Leads and notifications (ntfy push + Resend email) |
-| `agent/admin.js` | Admin pages and kill switch |
+| `agent/lead.js`, `agent/notify.js` | Leads and notifications (ntfy push without visitor details + Resend email) |
+| `agent/admin.js` | Admin pages, kill switch and deleting a visitor's data |
 
 Edit those files and push to `master` to change the agent. If you change `profile.json`, copy it to the site repo too.
 
@@ -165,7 +165,11 @@ All agent keys are defined in `agent/keys.js`, in three groups:
 
 ## Data and privacy
 
-Conversations (with IP, approximate location, network, browser and referrer) are stored in Redis for `AGENT_RETENTION_DAYS` and visible only on the admin page; the site tells visitors that conversations are saved. Leads are kept until deleted. The agent never sees or shares an email address for Łukasz. With Braintrust on, conversation text (including any name or email a visitor types) is sent to Braintrust as well; IP, location, browser and referrer are not.
+Conversations (with IP, approximate location from Cloudflare's headers, browser and referrer) are stored in Redis for `AGENT_RETENTION_DAYS` and visible only on the admin page; the site tells visitors they're chatting with an AI assistant and that conversations are saved. Leads are kept until deleted. The agent never sees or shares an email address for Łukasz. With Braintrust on, conversation text (including any name or email a visitor types) is sent to Braintrust as well; IP, location, browser and referrer are not.
+
+- **Location** comes only from Cloudflare (`cf-ipcountry`, plus city and region when the "Add visitor location headers" managed transform is on). No third-party lookup.
+- **Push notifications** (ntfy) carry no visitor details, only "New lead" or "New conversation" and the admin link, because anyone who knows an ntfy topic can read it. Names, emails and questions go by email only.
+- **Deleting on request:** on the admin page, "Delete someone's data" removes every conversation, lead and Braintrust trace for an email address; each conversation page has its own delete button too.
 
 ## Playground notes
 

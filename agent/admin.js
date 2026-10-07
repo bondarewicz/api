@@ -4,6 +4,7 @@ const store = require('./store');
 const guard = require('./guard');
 const keys = require('./keys');
 const { client: redis } = require('../redis');
+const { deleteConversation } = require('./trace');
 
 const MAX_FAILURES_PER_HOUR = 10;
 const BASE = '/v1/agent/admin';
@@ -38,8 +39,8 @@ function safeEqual(a, b) {
 
 // The switch is a form, and browsers resend saved basic-auth credentials even on posts from
 // other sites, so it needs a token only the admin page knows, plus a same-origin check.
-function switchToken() {
-  return crypto.createHmac('sha256', process.env.ADMIN_PASSWORD || '').update(`killswitch:${guard.day()}`).digest('hex').slice(0, 32);
+function switchToken(purpose = 'killswitch') {
+  return crypto.createHmac('sha256', process.env.ADMIN_PASSWORD || '').update(`${purpose}:${guard.day()}`).digest('hex').slice(0, 32);
 }
 
 function sameOrigin(req) {
@@ -68,6 +69,40 @@ async function switchPanel() {
   return killed
     ? `<div class="switch off"><div><b>Agent is OFF</b><div class="sub">No calls to Claude. Visitors are told the assistant is resting and can still leave their email. Turned off ${esc(ago(killed.at))} (${esc(localTime(killed.at))}).</div></div>${form('on', 'Turn agent on', 'on')}</div>`
     : `<div class="switch"><div><b><span class="live"></span>Agent is ON</b><div class="sub">Claude is answering visitors. Turn it off instantly if anything looks wrong.</div></div>${form('off', 'Turn agent off', 'kill')}</div>`;
+}
+
+/* ───── deleting a visitor's data on request ───── */
+
+// Conversation, leads from it, and its Braintrust traces. Traces are best effort: Redis is the record.
+async function forgetConversation(id) {
+  const removed = await store.remove(id);
+  let traces = 0;
+  try { traces = await deleteConversation(id); } catch (err) { console.error('braintrust delete failed', err.message); }
+  return { removed, traces };
+}
+
+async function deleteOne(req, res) {
+  if (!sameOrigin(req) || !safeEqual((req.body || {}).token || '', switchToken('delete'))) {
+    return res.status(403).send('Forbidden. Reload the admin page and try again.');
+  }
+  const { traces } = await forgetConversation(req.params.id);
+  console.log(`agent: conversation deleted on request (${traces} traces)`);
+  res.redirect(303, `${BASE}?done=${encodeURIComponent('Conversation deleted, with its leads and traces.')}`);
+}
+
+// Everything stored for one email address: their conversations, leads and traces.
+async function forget(req, res) {
+  const body = req.body || {};
+  if (!sameOrigin(req) || !safeEqual(body.token || '', switchToken('delete'))) {
+    return res.status(403).send('Forbidden. Reload the admin page and try again.');
+  }
+  const email = String(body.email || '').trim().toLowerCase();
+  if (!email) return res.redirect(303, BASE);
+  const ids = await store.idsByEmail(email);
+  for (const id of ids) await forgetConversation(id);
+  const leads = await store.removeLeads((lead) => String(lead.email || '').toLowerCase() === email);
+  console.log(`agent: data deleted on request: ${ids.length} conversations, ${leads} more leads`);
+  res.redirect(303, `${BASE}?done=${encodeURIComponent(`Deleted ${plural(ids.length, 'conversation')} and ${plural(leads, 'other lead')} for that email.`)}`);
 }
 
 /**
@@ -236,6 +271,10 @@ aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(
 aside dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 12px;margin:0;font-size:14px}
 aside dt{color:var(--muted)}aside dd{margin:0;overflow-wrap:anywhere}
 .person{font-size:18px;font-weight:600}
+.notice{margin:16px 0;padding:12px 16px;border-radius:10px;background:var(--teal-soft);color:var(--teal-deep)}
+.forget{margin-top:32px}
+.forget input[type=email]{padding:10px 12px;border-radius:10px;border:1px solid #ccc;margin:12px 8px 0 0;min-width:260px;font:inherit}
+.forget button{margin-top:12px;padding:10px 16px;border-radius:10px;border:0;background:#B42318;color:#fff;font-weight:600;cursor:pointer}
 .btn{display:inline-block;margin-top:12px;padding:10px 16px;border-radius:10px;background:var(--amber);color:var(--night);text-decoration:none;font-weight:600}
 .switch{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 0;padding:16px 18px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
 .switch.off{background:var(--warn-soft);border-color:#E9C9A0}
@@ -297,10 +336,16 @@ async function list(req, res) {
 
   res.send(page('Visitor conversations', `<h1>Visitor conversations</h1>
 <div class="sub">Everything visitors asked the site agent, newest first. Kept ${esc(process.env.AGENT_RETENTION_DAYS || '180')} days.</div>
+${req.query.done ? `<div class="notice">${esc(String(req.query.done).slice(0, 200))}</div>` : ''}
 ${await switchPanel()}
 ${await stats(all)}
 <nav class="tabs">${tab('top', 'Top leads', all.filter((c) => priority(c).score >= 20).length)}${tab('all', 'All', all.length)}${tab('leads', 'Leads', all.filter(isLead).length)}${tab('flagged', 'Flagged', all.filter(flagged).length)}</nav>
-<div class="list">${rows || `<div class="empty">${filter === 'all' ? 'No conversations yet.' : 'Nothing here yet.'}</div>`}</div>`));
+<div class="list">${rows || `<div class="empty">${filter === 'all' ? 'No conversations yet.' : 'Nothing here yet.'}</div>`}</div>
+<form class="forget" method="post" action="${BASE}/forget" onsubmit="return confirm('Delete every conversation, lead and trace for this email? This cannot be undone.')">
+<h2>Delete someone's data</h2>
+<div class="sub">When a visitor asks to be forgotten: deletes their conversations, leads and Braintrust traces.</div>
+<input type="hidden" name="token" value="${switchToken('delete')}"><input type="email" name="email" placeholder="Their email address" required><button type="submit">Delete</button>
+</form>`));
 }
 
 /* ───── one conversation ───── */
@@ -349,8 +394,9 @@ ${v.note ? `<p style="margin:10px 0 0">${esc(v.note)}</p>` : ''}
 <div class="card"><h2>How they arrived</h2>${dl([['Source', source(c)], ['Referrer', c.referrer], ['Landing page', c.landing], ['First asked', firstQ ? localTime(firstQ.at) : '']])}</div>
 <div class="card"><h2>Device</h2>${dl([['Browser', device(c.userAgent)], ['Screen', c.screen]])}</div>
 <div class="card"><h2>Cost</h2>${dl([['Model', c.model], ['Spent', `$${(c.costUsd || 0).toFixed(4)}`]])}</div>
+<form class="card forget" method="post" action="${BASE}/c/${esc(c.id)}/delete" onsubmit="return confirm('Delete this conversation, its leads and its traces? This cannot be undone.')"><h2>Delete</h2><div class="sub">If the visitor asks for their data to be removed.</div><input type="hidden" name="token" value="${switchToken('delete')}"><button type="submit">Delete this conversation</button></form>
 </aside>
 </div>`));
 }
 
-module.exports = { requireAdmin, list, detail, killSwitch, priority, emailLooksReal };
+module.exports = { requireAdmin, list, detail, killSwitch, deleteOne, forget, priority, emailLooksReal };

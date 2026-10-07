@@ -16,6 +16,8 @@ async function underCap(what, max) {
 
 /**
  * Push to LEAD_WEBHOOK_URL: an ntfy.sh topic, or a Slack/Discord webhook (JSON).
+ * Anyone who knows an ntfy topic can read it, so pushes never carry visitor details: only what
+ * happened and the admin link. Names, emails and questions go by email only.
  */
 async function push({ title, text, link, tags }) {
   const url = process.env.LEAD_WEBHOOK_URL;
@@ -67,12 +69,14 @@ async function email({ title, text, link }) {
 
 /**
  * Sends the push and (unless sendEmail is false) the email independently, so one failing
- * never blocks the other. Returns true if at least one went out.
+ * never blocks the other. The push carries only pushTitle (no visitor details); the email has
+ * title and text. Returns true if at least one went out.
  */
-async function notify({ sendEmail = true, title, text, ...rest }) {
+async function notify({ sendEmail = true, title, text, pushTitle, ...rest }) {
   const message = { ...rest, title: clean(title, 120).replace(/\n/g, ' '), text: clean(text, 1500) };
+  const pushMessage = { link: message.link, tags: message.tags, title: pushTitle || 'bondarewicz.com', text: 'Tap to open it in the admin.' };
   const [pushed, emailed] = await Promise.all([
-    (await underCap('pushes', PUSHES_PER_DAY)) ? push(message) : false,
+    (await underCap('pushes', PUSHES_PER_DAY)) ? push(pushMessage) : false,
     sendEmail && (await underCap('emails', EMAILS_PER_DAY)) ? email(message) : false,
   ]);
   return pushed || emailed;

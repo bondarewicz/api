@@ -67,7 +67,7 @@ async function record({ req, ip, body, question, reply, model, costUsd, notifyNe
     if (!conv) return false;
     // one "new conversation" push per visitor per hour, however many ids they make up
     if (isNew && notifyNew && (await guard.firstTime(keys.perVisitor('notified', ip), 3600))) {
-      notify({ title: `New conversation · ${where(conv)}`, text: question.slice(0, 500), link: adminLink(conv.id), sendEmail: false });
+      notify({ title: `New conversation · ${where(conv)}`, pushTitle: 'New conversation', text: question.slice(0, 500), link: adminLink(conv.id), sendEmail: false });
     }
     const v = reply.visitor || {};
     if (isEmail(v.email) && (await store.setVisitor(conv.id, { name: v.name, email: v.email, company: v.company, role: v.role }, ip))) {

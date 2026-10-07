@@ -566,6 +566,8 @@ apiRoutes.get('/agent/profile', agentProfile);
 apiRoutes.get('/agent/admin', admin.requireAdmin, admin.list);
 apiRoutes.get('/agent/admin/c/:id', admin.requireAdmin, admin.detail);
 apiRoutes.post('/agent/admin/killswitch', admin.requireAdmin, admin.killSwitch);
+apiRoutes.post('/agent/admin/c/:id/delete', admin.requireAdmin, admin.deleteOne);
+apiRoutes.post('/agent/admin/forget', admin.requireAdmin, admin.forget);
 
 api.use('/v1', apiRoutes);
 module.exports = api;

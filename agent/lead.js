@@ -25,6 +25,7 @@ async function saveLead({ name, email, company, note, conversationId, ip, source
   const lastQuestion = conv ? [...conv.messages].reverse().find((m) => m.role === 'user') : null;
   const notified = await notify({
     title: `New lead: ${lead.name || lead.email}`,
+    pushTitle: 'New lead',
     tags: 'briefcase',
     link: adminLink(lead.conversationId),
     text: [
