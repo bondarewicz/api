@@ -114,7 +114,7 @@ Traces can be added to the dataset straight from Braintrust's logs: a trace's in
 | Claude spend | $0.50 per day, reserved before each call | `AGENT_DAILY_BUDGET_USD` / `dailyBudgetUsd` |
 | Concurrent Claude calls | 4 | `maxConcurrentCalls` |
 | Output per answer | 700 tokens | `maxOutputTokens` |
-| Abuse | 2 abusive or 4 off-topic messages pause a visitor for an hour | `agent/index.js` |
+| Abuse | 2 abusive or 6 off-topic messages within an hour pause a visitor for an hour; an off-topic pause still offers the email form | `agent/index.js` |
 | Leads | 5 per visitor per hour, 100 per day | `leadsPerIpPerHour`, `leadsPerDay` |
 | Notifications | 60 pushes, 25 emails per day | `NOTIFY_PUSHES_PER_DAY`, `NOTIFY_EMAILS_PER_DAY` |
 

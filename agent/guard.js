@@ -111,8 +111,9 @@ async function clearStrikes(ip, kind) {
   await redis.del(keys.strike(kind, ip));
 }
 
+// Why the visitor is paused ('off_topic' or 'abusive'), or null.
 async function isPaused(ip) {
-  return Boolean(await redis.get(keys.paused(ip)));
+  return redis.get(keys.paused(ip));
 }
 
 /**

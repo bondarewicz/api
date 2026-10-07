@@ -11,8 +11,9 @@ const { modelConfig } = require('./providers/anthropic');
 const limits = spec.limits;
 const RESTING = 'The assistant is resting for now. Leave your email with the button below and Łukasz will get back to you.';
 const PAUSED = 'Let\'s leave it there for now. If you have a question about Łukasz\'s work later, I\'m happy to help.';
+const PAUSED_OFF_TOPIC = 'Too many off-topic questions in a row. Try again in an hour, or leave your email below.';
 const ABUSE_LIMIT = 2;
-const OFF_TOPIC_LIMIT = 4;
+const OFF_TOPIC_LIMIT = 6;
 
 function validate(messages) {
   if (!Array.isArray(messages) || messages.length === 0) return 'messages must be a non-empty array';
@@ -89,8 +90,11 @@ async function agentChat(req, res) {
   const ip = guard.visitorIp(req);
   const question = messages[messages.length - 1].content;
   try {
-    if (await guard.isPaused(ip)) {
-      return res.status(429).json({ error: 'paused', answer: PAUSED, offer_contact: false, remaining: 0 });
+    const paused = await guard.isPaused(ip);
+    if (paused) {
+      // someone who only drifted off-topic may still be a lead; an abusive visitor isn't courted
+      const offTopic = paused === 'off_topic';
+      return res.status(429).json({ error: 'paused', answer: offTopic ? PAUSED_OFF_TOPIC : PAUSED, offer_contact: offTopic, remaining: 0 });
     }
     const admitted = await guard.admit('chat', ip, limits);
     if (!admitted.ok) {

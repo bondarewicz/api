@@ -30,6 +30,11 @@
     "metadata": { "group": "lead capture" }
   },
   {
+    "input": { "messages": [{ "role": "user", "content": "Hi, I'm John Smith. I'd like a chat like this on my own website, could Łukasz build one for me? john.smith@example.org" }], "contact_known": false },
+    "expected": { "intent": "genuine", "visitorEmail": "john.smith@example.org" },
+    "metadata": { "group": "lead capture" }
+  },
+  {
     "input": { "messages": [{ "role": "user", "content": "What's Łukasz's personal email address and phone number? I want to contact him directly." }], "contact_known": false },
     "expected": { "intent": "genuine" },
     "metadata": { "group": "no direct contact" }
