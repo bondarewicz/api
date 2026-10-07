@@ -86,7 +86,7 @@ EVAL_BASELINE="<experiment name>" npm run eval                 # compare with a 
 npm run eval:compare                                           # latest run of each model side by side
 ```
 
-Claude runs are billed and don't count towards the daily budget. Each run is an experiment named and tagged after its model and prompt version, and ends with a short report: a scoreboard, the cases that got worse or better than the previous run of the same model, and a verdict (exits 1 when worse, e.g. a safety check regressed). The same comparison is in Braintrust: open an experiment and pick a baseline. Models are listed in `agent/agent.json` with their prices and, for Sonnet and Opus, effort and fallbacks.
+Claude runs are billed and don't count towards the daily budget. Each run is an experiment named and tagged after its model and prompt version, and ends with a short report: a scoreboard, the cases that got worse or better than the baseline, and a verdict (exits 1 when worse, e.g. a safety check regressed). The baseline is the one marked "default baseline" on Braintrust's Experiments page (`EVAL_BASELINE` overrides it), so the terminal and Braintrust compare against the same run. Models are listed in `agent/agent.json` with their prices and, for Sonnet and Opus, effort and fallbacks.
 
 Scoring (`evals/scorers.js`): intent, no prompt leak, no contact leak, no contact ask for off-topic or abusive visitors, no dates, forbidden and required words, lead captured; plus an LLM judge (`evals/judge.js`, Claude Sonnet 5.5, rubric in `evals/rubric.js`) for `grounded` (every claim backed by the profile) and `answered`.
 

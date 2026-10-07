@@ -27,10 +27,10 @@ function isVisitorQuestion(q) {
  * The full prompt for this turn: system.md + profile, then where the conversation stands,
  * so the model asks who the visitor is early and only once.
  */
-function prompt(messages, known) {
+function prompt(messages, known, today = new Date().toISOString().slice(0, 10)) {
   const visitorTurn = messages.filter((m) => m.role === 'user').length;
   const availabilityMentioned = messages.some((m) => m.role === 'assistant' && /finishing up|looking for (his|a) (next|new)/i.test(m.content));
-  const state = `\n\nConversation state: today is ${new Date().toISOString().slice(0, 10)}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}. His availability has ${availabilityMentioned ? 'ALREADY been mentioned, so don\'t mention it again unless asked directly' : 'not been mentioned yet'}.`;
+  const state = `\n\nConversation state: today is ${today}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}. His availability has ${availabilityMentioned ? 'ALREADY been mentioned, so don\'t mention it again unless asked directly' : 'not been mentioned yet'}.`;
   return { system: system + state, state: state.trim(), messages: messages.map((m) => ({ role: m.role, content: m.content })), visitorTurn };
 }
 

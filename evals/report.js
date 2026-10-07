@@ -1,10 +1,10 @@
 /**
  * Reads experiments back from Braintrust and boils them down, so nobody has to scan the table:
  * a scoreboard with one line per experiment, then only the cases that moved against the
- * baseline, and a verdict. `npm run eval` prints this at the end of every run.
+ * baseline (the project's default baseline in Braintrust, unless another is named), and a verdict. `npm run eval` prints this at the end of every run.
  *
  *   npm run eval:compare                         # latest run of each model, side by side
- *   npm run eval:compare -- "<new>"              # that run against the previous run of its model
+ *   npm run eval:compare -- "<new>"              # that run against the default baseline
  *   npm run eval:compare -- "<baseline>" "<new>" # any two runs
  */
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
@@ -72,7 +72,8 @@ async function load(exp) {
   const cases = new Map();
   for (const t of traces.values()) {
     if (!t.input) continue;
-    const key = JSON.stringify(t.input);
+    // a case is its conversation; the state line (date, message number) may differ between runs
+    const key = JSON.stringify({ messages: t.input.messages, contact_known: t.input.contact_known });
     const c = cases.get(key) || { input: t.input, group: t.metadata.group, runs: [] };
     c.runs.push(t);
     cases.set(key, c);
@@ -161,23 +162,34 @@ function compare(base, next) {
 }
 
 /**
- * The run named `nextName` against `baseName`, or against the previous run of the same model.
+ * The baseline a run is judged against: the one named, else the project's default baseline set
+ * in Braintrust (Experiments → "Set as default baseline"), else the previous run of the same model.
+ */
+async function baselineFor(next, all, baseName) {
+  const named = (name) => all.filter((e) => e.name === name).pop();
+  if (baseName) return named(baseName);
+  const { objects: [proj] } = await call(`/v1/project?project_name=${encodeURIComponent(project)}`);
+  const id = proj?.settings?.baseline_experiment_id;
+  const projectDefault = id && id !== next.id && all.find((e) => e.id === id);
+  if (projectDefault) return projectDefault;
+  return all.filter((e) => e !== next && e.created < next.created && e.metadata?.model === next.metadata?.model).pop();
+}
+
+/**
+ * The run named `nextName` against its baseline (see baselineFor).
  */
 async function report(nextName, baseName) {
   const all = await experiments();
   // Braintrust can hold several runs with one name; the latest is the one meant
-  const named = (name) => all.filter((e) => e.name === name).pop();
-  const next = named(nextName);
+  const next = all.filter((e) => e.name === nextName).pop();
   if (!next) throw new Error(`no experiment named "${nextName}"`);
-  const model = next.metadata?.model;
-  const base = baseName
-    ? named(baseName)
-    : all.filter((e) => e !== next && e.created < next.created && e.metadata?.model === model).pop();
+  const base = await baselineFor(next, all, baseName);
+  if (baseName && !base) throw new Error(`no experiment named "${baseName}"`);
   const runs = await Promise.all([base, next].filter(Boolean).map(load));
   console.log('');
   scoreboard(runs);
   if (!base) {
-    console.log(`\nNo earlier ${model} run to compare with; this one is the baseline.`);
+    console.log('\nNo baseline to compare with; set one in Braintrust or with EVAL_BASELINE.');
     return 'same';
   }
   return compare(runs[0], runs[1]);

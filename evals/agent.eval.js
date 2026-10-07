@@ -11,8 +11,8 @@
  *
  * With BRAINTRUST_API_KEY, cases come from the Braintrust dataset "agent-cases" (seed it from
  * evals/cases.json with `npm run eval:upload`), each run is an experiment named and tagged after
- * the model and prompt version, and the run ends with a verdict against the previous run of the
- * same model (see report.js). Without the key it reads evals/cases.json and only prints scores.
+ * the model and prompt version, and the run ends with a verdict against the default baseline set
+ * in Braintrust (see report.js). Without the key it reads evals/cases.json and only prints scores.
  */
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const fs = require('fs');
@@ -56,7 +56,7 @@ Eval(project, {
   maxConcurrency: provider === 'anthropic' ? 4 : 1,
   ...(process.env.EVAL_BASELINE && { baseExperimentName: process.env.EVAL_BASELINE }),
 }, { noSendLogs: !process.env.BRAINTRUST_API_KEY })
-  // the verdict against the previous run of this model (or EVAL_BASELINE); exits 1 when worse
+  // the verdict against EVAL_BASELINE or the project's default baseline; exits 1 when worse
   .then(async ({ summary }) => {
     if (!process.env.BRAINTRUST_API_KEY) return;
     await flush();
