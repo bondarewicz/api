@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const spec = require('./agent.json');
 const { promptProfile } = require('./prompt-profile');
 const { answerSchema, normalise, isEmail } = require('./schema');
-const { traced, log } = require('./trace');
+const { traced, log, source } = require('./trace');
 const providers = {
   ollama: require('./providers/ollama'),
   anthropic: require('./providers/anthropic'),
@@ -64,8 +64,8 @@ async function respond({ provider, turn, known }) {
 
 /**
  * respond() inside a Braintrust 'agent.chat' span: the visitor's messages in, the reply out,
- * and what's needed to slice traces (prompt version, model, intent, cost), with the model and
- * intent as tags for one-click filtering. No IP, location or browser details; those stay in Redis.
+ * and what's needed to slice traces (prompt version, model, intent, cost), with where it ran
+ * (production, local or eval), the model and the intent as tags for one-click filtering. No IP, location or browser details; those stay in Redis.
  */
 function tracedRespond({ provider, turn, known, conversationId }) {
   return traced('agent.chat', 'task', async (span) => {
@@ -75,6 +75,7 @@ function tracedRespond({ provider, turn, known, conversationId }) {
       input: { messages: turn.messages, contact_known: known, state: turn.state },
       output: reply,
       metadata: {
+        source: source(),
         conversation_id: conversationId,
         prompt_version: promptVersion,
         provider,
@@ -83,7 +84,7 @@ function tracedRespond({ provider, turn, known, conversationId }) {
         intent: reply.intent,
         cost_usd: result.costUsd,
       },
-      tags: [result.model, reply.intent],
+      tags: [source(), result.model, reply.intent],
     });
     return out;
   });

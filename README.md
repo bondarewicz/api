@@ -70,7 +70,9 @@ Edit those files and push to `master` to change the agent. If you change `profil
 
 ### Traces and experiments
 
-With `BRAINTRUST_API_KEY` set, every model call is traced to Braintrust (project `BRAINTRUST_PROJECT`, default `bondarewicz`). Each turn is an `agent.chat` span (the visitor's messages and conversation state in, the reply out; metadata: conversation id, prompt version, model, intent, cost; tags: model and intent) with the Claude or Ollama call nested under it. Without the key, nothing is sent. Tracing is best-effort and never fails a request.
+With `BRAINTRUST_API_KEY` set, every model call is traced to Braintrust (project `BRAINTRUST_PROJECT`, default `bondarewicz`). Each turn is an `agent.chat` span (the visitor's messages and conversation state in, the reply out; metadata: conversation id, prompt version, model, intent, cost; tags: where it ran, model and intent) with the Claude or Ollama call nested under it. Without the key, nothing is sent. Tracing is best-effort and never fails a request.
+
+The first tag says where a trace ran: `production` on Railway, `local` for a server on your machine, `eval` inside experiments (`AGENT_ENV` overrides it). Filter Logs by the `production` tag to see only real visitors.
 
 `prompt_version` is a hash of system.md plus the profile, so traces and experiments can be compared prompt by prompt.
 

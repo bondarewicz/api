@@ -17,6 +17,14 @@ if (process.env.BRAINTRUST_API_KEY) {
 const active = () => !!logger || !!braintrust.currentExperiment();
 
 /**
+ * Where a trace comes from, so production and a local server are easy to tell apart in Braintrust:
+ * "production" on Railway (its environment name), "eval" inside an experiment, "local" otherwise.
+ * AGENT_ENV overrides it.
+ */
+const source = () => process.env.AGENT_ENV
+  || (braintrust.currentExperiment() ? 'eval' : process.env.RAILWAY_ENVIRONMENT_NAME || 'local');
+
+/**
  * Runs fn(span) inside a Braintrust span (type 'task' or 'llm'); with tracing off, span is a no-op.
  */
 function traced(name, type, fn) {
@@ -35,4 +43,4 @@ function log(span, event) {
 // Claude calls become 'llm' spans with tokens, latency and the full request and response.
 const wrapAnthropic = (client) => (active() ? braintrust.wrapAnthropic(client) : client);
 
-module.exports = { traced, log, wrapAnthropic };
+module.exports = { traced, log, wrapAnthropic, source };
