@@ -20,7 +20,7 @@ const DATASET_DATE = '2026-10-07';
     const id = crypto.createHash('sha256').update(JSON.stringify(c.input)).digest('hex').slice(0, 16);
     // the same conversation-state line production appends, for prompts run inside Braintrust; with
     // a fixed date, so a case's input stays identical and runs on different days still line up
-    const { state } = prompt(c.input.messages, !!c.input.contact_known, DATASET_DATE);
+    const { state } = prompt(c.input.messages, !!c.input.contact_known, { today: DATASET_DATE });
     dataset.insert({ id, input: { ...c.input, state }, expected: c.expected, metadata: c.metadata });
   }
   console.log(await dataset.summarize());

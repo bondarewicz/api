@@ -16,9 +16,25 @@ const promptVersion = crypto.createHash('sha256').update(system).digest('hex').s
 const schema = answerSchema();
 const limits = spec.limits;
 const JD_MIN_CHARS = 150;
-const ASK_WHO = 'By the way, who am I talking to? Share your name and the best email to reach you, and I\'ll make sure Łukasz gets back to you.';
+// fixed messages in the languages the site comes in
+const ASK_WHO = {
+  en: 'By the way, who am I talking to? Share your name and the best email to reach you, and I\'ll make sure Łukasz gets back to you.',
+  pl: 'A tak przy okazji, z kim rozmawiam? Podaj imię i najlepszy adres e-mail, a dopilnuję, żeby Łukasz się odezwał.',
+};
+const NO_ANSWER = {
+  en: 'Sorry, I couldn\'t answer that. Leave your email and Łukasz will reply himself.',
+  pl: 'Niestety nie umiem na to odpowiedzieć. Zostaw swój e-mail, a Łukasz odpowie osobiście.',
+};
+const SITE_LANGUAGE = { en: 'English', pl: 'Polish' };
 
-function isVisitorQuestion(q) {
+function isVisitorQuestion(q, lang = 'en') {
+  if (lang === 'pl') {
+    // Polish drops the pronoun ("Co zbudował?"), so reject what addresses the visitor instead:
+    // second-person words and verbs (szukasz, możesz), but not the name Łukasz
+    const words = q.toLowerCase().replace(/[łl]ukasz\w*/g, '').split(/[^a-ząćęłńóśźż]+/);
+    const secondPerson = words.some((w) => /^(ty|twój|twoja|twoje|twojej|twoim|ciebie|cię|tobie|wasz|wasza|wasze|pan|pani|państwo)$/.test(w) || /(esz|isz|ysz|asz)$/.test(w));
+    return !secondPerson;
+  }
   // \b treats Ł as a non-letter, so match the name separately
   return (/\b(he|his|him)\b/i.test(q) || /[łl]ukasz/i.test(q)) && !/\b(you|your|you're|yours)\b/i.test(q);
 }
@@ -27,11 +43,11 @@ function isVisitorQuestion(q) {
  * The full prompt for this turn: system.md + profile, then where the conversation stands,
  * so the model asks who the visitor is early and only once.
  */
-function prompt(messages, known, today = new Date().toISOString().slice(0, 10)) {
+function prompt(messages, known, { today = new Date().toISOString().slice(0, 10), lang = 'en' } = {}) {
   const visitorTurn = messages.filter((m) => m.role === 'user').length;
   const availabilityMentioned = messages.some((m) => m.role === 'assistant' && /finishing up|looking for (his|a) (next|new)/i.test(m.content));
-  const state = `\n\nConversation state: today is ${today}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}. His availability has ${availabilityMentioned ? 'ALREADY been mentioned, so don\'t mention it again unless asked directly' : 'not been mentioned yet'}.`;
-  return { system: system + state, state: state.trim(), messages: messages.map((m) => ({ role: m.role, content: m.content })), visitorTurn };
+  const state = `\n\nConversation state: today is ${today}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}. His availability has ${availabilityMentioned ? 'ALREADY been mentioned, so don\'t mention it again unless asked directly' : 'not been mentioned yet'}. They are on the ${SITE_LANGUAGE[lang] || 'English'} version of the site.`;
+  return { system: system + state, state: state.trim(), messages: messages.map((m) => ({ role: m.role, content: m.content })), visitorTurn, lang: SITE_LANGUAGE[lang] ? lang : 'en' };
 }
 
 /**
@@ -45,7 +61,7 @@ async function respond({ provider, turn, known }) {
   const reply = normalise(result.raw);
   // follow-ups become the visitor's next message when clicked, so they must be questions
   // about Łukasz, never the agent asking the visitor something ("What role are you hiring for?")
-  reply.followups = reply.followups.filter(isVisitorQuestion);
+  reply.followups = reply.followups.filter((q) => isVisitorQuestion(q, turn.lang));
   // house style: no em dashes, whatever the model does
   reply.answer = reply.answer.replace(/\s*—\s*/g, ', ');
   const genuine = reply.intent === 'genuine';
@@ -55,9 +71,9 @@ async function respond({ provider, turn, known }) {
   }
   // a fit report only makes sense against a pasted job description
   if (question.length < JD_MIN_CHARS) reply.fit = { strong: [], discuss: [] };
-  if (!reply.answer && !reply.fit.strong.length) reply.answer = 'Sorry, I couldn\'t answer that. Leave your email and Łukasz will reply himself.';
+  if (!reply.answer && !reply.fit.strong.length) reply.answer = NO_ANSWER[turn.lang];
   // the model doesn't reliably ask on its own, so make sure the first answer does
-  if (genuine && !known && !isEmail(reply.visitor?.email) && turn.visitorTurn === 1 && !/\?\s*$/.test(reply.answer) && !/email/i.test(reply.answer)) reply.ask = ASK_WHO;
+  if (genuine && !known && !isEmail(reply.visitor?.email) && turn.visitorTurn === 1 && !/\?\s*$/.test(reply.answer) && !/e-?mail/i.test(reply.answer)) reply.ask = ASK_WHO[turn.lang];
 
   return { reply, result };
 }
@@ -90,4 +106,4 @@ function tracedRespond({ provider, turn, known, conversationId }) {
   });
 }
 
-module.exports = { prompt, respond: tracedRespond, promptProfile, promptVersion, system, schema };
+module.exports = { prompt, respond: tracedRespond, isVisitorQuestion, promptProfile, promptVersion, system, schema };

@@ -9,9 +9,23 @@ const { notify, adminLink, where } = require('./notify');
 const { modelConfig } = require('./providers/anthropic');
 
 const limits = spec.limits;
-const RESTING = 'The assistant is resting for now. Leave your email with the button below and Łukasz will get back to you.';
-const PAUSED = 'Let\'s leave it there for now. If you have a question about Łukasz\'s work later, I\'m happy to help.';
-const PAUSED_OFF_TOPIC = 'Too many off-topic questions in a row. Try again in an hour, or leave your email below.';
+// fixed replies in the languages the site comes in
+const RESTING = {
+  en: 'The assistant is resting for now. Leave your email with the button below and Łukasz will get back to you.',
+  pl: 'Asystent na razie odpoczywa. Zostaw swój e-mail przyciskiem poniżej, a Łukasz się odezwie.',
+};
+const PAUSED = {
+  en: 'Let\'s leave it there for now. If you have a question about Łukasz\'s work later, I\'m happy to help.',
+  pl: 'Na razie na tym zakończmy. Jeśli później będziesz mieć pytanie o pracę Łukasza, chętnie pomogę.',
+};
+const PAUSED_OFF_TOPIC = {
+  en: 'Too many off-topic questions in a row. Try again in an hour, or leave your email below.',
+  pl: 'Za dużo pytań nie na temat z rzędu. Spróbuj ponownie za godzinę albo zostaw swój e-mail poniżej.',
+};
+const TOO_MANY = {
+  en: 'That\'s a lot of questions for one hour. Try again later, or leave your email below.',
+  pl: 'To sporo pytań jak na jedną godzinę. Spróbuj później albo zostaw swój e-mail poniżej.',
+};
 const ABUSE_LIMIT = 2;
 const OFF_TOPIC_LIMIT = 6;
 
@@ -89,29 +103,30 @@ async function agentChat(req, res) {
 
   const ip = guard.visitorIp(req);
   const question = messages[messages.length - 1].content;
+  const lang = body.lang === 'pl' ? 'pl' : 'en';
   try {
     const paused = await guard.isPaused(ip);
     if (paused) {
       // someone who only drifted off-topic may still be a lead; an abusive visitor isn't courted
       const offTopic = paused === 'off_topic';
-      return res.status(429).json({ error: 'paused', answer: offTopic ? PAUSED_OFF_TOPIC : PAUSED, offer_contact: offTopic, remaining: 0 });
+      return res.status(429).json({ error: 'paused', answer: offTopic ? PAUSED_OFF_TOPIC[lang] : PAUSED[lang], offer_contact: offTopic, remaining: 0 });
     }
     const admitted = await guard.admit('chat', ip, limits);
     if (!admitted.ok) {
       const answer = admitted.reason === 'visitor'
-        ? `That's a lot of questions for one hour. Try again later, or leave your email below.`
-        : RESTING;
+        ? TOO_MANY[lang]
+        : RESTING[lang];
       // over a limit: answer without recording or notifying, so the limits can't be used to flood
       return res.status(admitted.status).json({ error: admitted.reason, answer, offer_contact: true, remaining: 0 });
     }
 
     const known = await store.visitorKnown(body.conversationId, ip);
-    const turn = prompt(messages, known);
+    const turn = prompt(messages, known, { lang });
 
     const picked = await pickProvider(turn.system, turn.messages);
     if (!picked) {
-      await record({ req, ip, body, question, reply: emptyReply(RESTING, 'resting') });
-      return res.status(503).json({ error: 'resting', answer: RESTING, offer_contact: true, remaining: admitted.remaining });
+      await record({ req, ip, body, question, reply: emptyReply(RESTING[lang], 'resting') });
+      return res.status(503).json({ error: 'resting', answer: RESTING[lang], offer_contact: true, remaining: admitted.remaining });
     }
     const { name, reserved } = picked;
 
@@ -139,8 +154,8 @@ async function agentChat(req, res) {
     res.json({ ...publicReply, contact_saved: contactSaved, remaining: admitted.remaining });
   } catch (err) {
     console.error('agent error', err);
-    await record({ req, ip, body, question, reply: emptyReply(RESTING, 'error') });
-    res.status(502).json({ error: 'agent unavailable', answer: RESTING, offer_contact: true });
+    await record({ req, ip, body, question, reply: emptyReply(RESTING[lang], 'error') });
+    res.status(502).json({ error: 'agent unavailable', answer: RESTING[lang], offer_contact: true });
   }
 }
 
