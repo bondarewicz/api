@@ -9,11 +9,37 @@
     },
     "anthropic": {
       "model": "claude-haiku-4-5",
-      "priceUsdPerMTok": {
-        "input": 1.0,
-        "output": 5.0,
-        "cacheWrite": 1.25,
-        "cacheRead": 0.1
+      "models": {
+        "claude-haiku-4-5": {
+          "priceUsdPerMTok": {
+            "input": 1.0,
+            "output": 5.0,
+            "cacheWrite": 1.25,
+            "cacheRead": 0.1
+          }
+        },
+        "claude-sonnet-5-5": {
+          "priceUsdPerMTok": {
+            "input": 2.0,
+            "output": 10.0,
+            "cacheWrite": 2.5,
+            "cacheRead": 0.2
+          },
+          "effort": "low",
+          "maxOutputTokens": 4000,
+          "fallbacks": true
+        },
+        "claude-opus-5-5": {
+          "priceUsdPerMTok": {
+            "input": 4.0,
+            "output": 20.0,
+            "cacheWrite": 5.0,
+            "cacheRead": 0.2
+          },
+          "effort": "low",
+          "maxOutputTokens": 4000,
+          "fallbacks": true
+        }
       }
     }
   },

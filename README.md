@@ -57,7 +57,9 @@ POST /v1/agent/chat  { conversationId, meta, messages: [{ role, content }] }
 | `agent/system.md` | Behaviour and rules: grounding, tone, what never to share or invent |
 | `agent/profile.json` | Everything the agent knows: positioning, availability, roles, projects, experience, approved facts. It holds no employer names or dates (those are on LinkedIn), so the agent can't repeat them. The site copies only the capabilities and links with `npm run sync-profile` |
 | `agent/schema.js` | The structured reply every provider must return |
-| `agent/index.js` | Builds the prompt (system.md + profile + today's date and conversation state), picks the provider, enforces post-processing (no em dashes, visitor-side follow-ups, fit reports only for job descriptions) |
+| `agent/index.js` | The chat route: limits, provider choice, budget, strikes, recording and leads |
+| `agent/respond.js` | Builds the prompt (system.md + profile + today's date and conversation state), runs the model, enforces post-processing (no em dashes, visitor-side follow-ups, fit reports only for job descriptions). Shared by the chat route and experiments |
+| `agent/trace.js` | Braintrust tracing (see "Traces and experiments") |
 | `agent/providers/` | Claude (`@anthropic-ai/sdk`) and Ollama |
 | `agent/guard.js` | Rate limits, budget reservation, concurrency slots, strikes and pauses, kill switch, visitor IP |
 | `agent/store.js` | Conversation log in Redis (bound to the IP that started it) |
@@ -65,6 +67,30 @@ POST /v1/agent/chat  { conversationId, meta, messages: [{ role, content }] }
 | `agent/admin.js` | Admin pages and kill switch |
 
 Edit those files and push to `master` to change the agent. If you change `profile.json`, copy it to the site repo too.
+
+### Traces and experiments
+
+With `BRAINTRUST_API_KEY` set, every model call is traced to Braintrust (project `BRAINTRUST_PROJECT`, default `bondarewicz`). Each turn is an `agent.chat` span (the visitor's messages and conversation state in, the reply out; metadata: conversation id, prompt version, model, intent, cost; tags: model and intent) with the Claude or Ollama call nested under it. Without the key, nothing is sent. Tracing is best-effort and never fails a request.
+
+`prompt_version` is a hash of system.md plus the profile, so traces and experiments can be compared prompt by prompt.
+
+**Experiments from the terminal** run the real agent code (prompt, model, post-processing) over the Braintrust dataset `agent-cases`, three trials per case:
+
+```sh
+npm run eval                                                   # local Ollama, free
+AGENT_PROVIDER=anthropic npm run eval                          # Claude Haiku, as in production
+AGENT_PROVIDER=anthropic ANTHROPIC_MODEL=claude-sonnet-5-5 npm run eval
+EVAL_BASELINE="<experiment name>" npm run eval                 # compare with a specific run
+npm run eval:compare                                           # latest run of each model side by side
+```
+
+Claude runs are billed and don't count towards the daily budget. Each run is an experiment named and tagged after its model and prompt version, and ends with a short report: a scoreboard, the cases that got worse or better than the previous run of the same model, and a verdict (exits 1 when worse, e.g. a safety check regressed). The same comparison is in Braintrust: open an experiment and pick a baseline. Models are listed in `agent/agent.json` with their prices and, for Sonnet and Opus, effort and fallbacks.
+
+Scoring (`evals/scorers.js`): intent, no prompt leak, no contact leak, no contact ask for off-topic or abusive visitors, no dates, forbidden and required words, lead captured; plus an LLM judge (`evals/judge.js`, Claude Sonnet 5.5, rubric in `evals/rubric.js`) for `grounded` (every claim backed by the profile) and `answered`.
+
+**Experiments in Braintrust:** `npm run braintrust:push` uploads `evals/cases.json` to the dataset, publishes the prompt from git as the Braintrust prompt `site-agent` (a new version only when it changed), and publishes the scorers. In "Create experiments" or the playground, pick `site-agent`, the `agent-cases` dataset and the scorers, and set Advanced → "Appended dataset messages path" to `input.messages`. Braintrust needs its own Anthropic key (Settings → AI providers) for this. Runs there call the model directly, without the API's post-processing; use `npm run eval` for exactly what production does.
+
+Traces can be added to the dataset straight from Braintrust's logs: a trace's input has the same shape as a case's.
 
 ### Endpoints
 
@@ -124,6 +150,8 @@ All agent keys are defined in `agent/keys.js`, in three groups:
 | `AGENT_ENABLED` | `false` turns the agent off |
 | `AGENT_DAILY_BUDGET_USD` | Daily Claude budget (default `0.5`) |
 | `AGENT_RETENTION_DAYS` | How long conversations are kept (default `180`) |
+| `BRAINTRUST_API_KEY` | Turns on tracing and experiments in Braintrust |
+| `BRAINTRUST_PROJECT` | Braintrust project (default `bondarewicz`) |
 | `ADMIN_PASSWORD` | Admin page password; without it the admin is off |
 | `ADMIN_TZ` | Timezone for admin times (default `Europe/Warsaw`) |
 | `CF_ORIGIN_SECRET` | Must match the `x-origin-secret` header a Cloudflare Transform Rule adds; agent routes then reject requests that bypass Cloudflare. Add the Cloudflare rule first, then this variable |
@@ -135,7 +163,7 @@ All agent keys are defined in `agent/keys.js`, in three groups:
 
 ## Data and privacy
 
-Conversations (with IP, approximate location, network, browser and referrer) are stored in Redis for `AGENT_RETENTION_DAYS` and visible only on the admin page; the site tells visitors that conversations are saved. Leads are kept until deleted. The agent never sees or shares an email address for Łukasz.
+Conversations (with IP, approximate location, network, browser and referrer) are stored in Redis for `AGENT_RETENTION_DAYS` and visible only on the admin page; the site tells visitors that conversations are saved. Leads are kept until deleted. The agent never sees or shares an email address for Łukasz. With Braintrust on, conversation text (including any name or email a visitor types) is sent to Braintrust as well; IP, location, browser and referrer are not.
 
 ## Playground notes
 

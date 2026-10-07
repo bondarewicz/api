@@ -2,11 +2,9 @@ const { client: redis } = require('../redis');
 const store = require('./store');
 const keys = require('./keys');
 const { notify, adminLink, where } = require('./notify');
+const { isEmail } = require('./schema');
 
-const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const clip = (s, n) => String(s || '').trim().slice(0, n);
-
-const isEmail = (s) => EMAIL_RE.test(String(s || '').trim());
 
 /**
  * Saves a lead (from the contact form or captured in chat) and pushes a notification.

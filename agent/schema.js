@@ -36,6 +36,9 @@ function answerSchema() {
   };
 }
 
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
+const isEmail = (s) => EMAIL_RE.test(String(s || '').trim());
+
 const clip = (s, n) => String(s || '').trim().slice(0, n);
 const list = (xs, max, len) => (Array.isArray(xs) ? xs : []).map((x) => clip(x, len)).filter(Boolean).slice(0, max);
 
@@ -60,4 +63,4 @@ function normalise(raw) {
   };
 }
 
-module.exports = { answerSchema, normalise };
+module.exports = { answerSchema, normalise, isEmail };

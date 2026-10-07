@@ -1,35 +1,14 @@
-const fs = require('fs');
-const path = require('path');
 const spec = require('./agent.json');
-const profile = require('./profile.json');
 const guard = require('./guard');
 const store = require('./store');
 const keys = require('./keys');
 const admin = require('./admin');
-const { answerSchema, normalise } = require('./schema');
+const { prompt, respond, promptProfile } = require('./respond');
 const { makeLeadHandler, saveLead, isEmail } = require('./lead');
 const { notify, adminLink, where } = require('./notify');
-const providers = {
-  ollama: require('./providers/ollama'),
-  anthropic: require('./providers/anthropic'),
-};
+const { modelConfig } = require('./providers/anthropic');
 
-// projects marked public: false stay out of the agent's knowledge until they're ready to show
-const visible = profile.projects.filter((p) => p.public !== false);
-const visibleIds = new Set(visible.map((p) => p.id));
-// the model only gets public links, never an email address it could hand out
-const promptProfile = {
-  ...profile,
-  projects: visible,
-  principles: (profile.principles || []).filter((pr) => visibleIds.has(pr.project)),
-  sideProjects: (profile.sideProjects || []).filter((id) => visibleIds.has(id)),
-  contact: { github: profile.contact.github, linkedin: profile.contact.linkedin },
-};
-const system = fs.readFileSync(path.join(__dirname, spec.system), 'utf8') + JSON.stringify(promptProfile, null, 2);
-const schema = answerSchema();
 const limits = spec.limits;
-const JD_MIN_CHARS = 150;
-const ASK_WHO = 'By the way, who am I talking to? Share your name and the best email to reach you, and I\'ll make sure Łukasz gets back to you.';
 const RESTING = 'The assistant is resting for now. Leave your email with the button below and Łukasz will get back to you.';
 const PAUSED = 'Let\'s leave it there for now. If you have a question about Łukasz\'s work later, I\'m happy to help.';
 const ABUSE_LIMIT = 2;
@@ -49,9 +28,9 @@ function validate(messages) {
 
 // Worst case for one Claude call: every input character a token (generous) plus the full output.
 function estimateUsd(systemText, messages) {
-  const price = spec.providers.anthropic.priceUsdPerMTok;
+  const { priceUsdPerMTok: price, maxOutputTokens } = modelConfig(spec.providers.anthropic);
   const chars = systemText.length + messages.reduce((n, m) => n + m.content.length, 0);
-  return ((chars / 3) * price.input + limits.maxOutputTokens * price.output) / 1e6;
+  return ((chars / 3) * price.input + (maxOutputTokens || limits.maxOutputTokens) * price.output) / 1e6;
 }
 
 /**
@@ -74,11 +53,6 @@ async function pickProvider(systemText, messages) {
     return fallback;
   }
   return { name: 'anthropic', reserved };
-}
-
-function isVisitorQuestion(q) {
-  // \b treats Ł as a non-letter, so match the name separately
-  return (/\b(he|his|him)\b/i.test(q) || /[łl]ukasz/i.test(q)) && !/\b(you|your|you're|yours)\b/i.test(q);
 }
 
 const emptyReply = (answer, status) => ({ answer, fit: { strong: [], discuss: [] }, followups: [], offer_contact: true, visitor: {}, status });
@@ -127,23 +101,19 @@ async function agentChat(req, res) {
       return res.status(admitted.status).json({ error: admitted.reason, answer, offer_contact: true, remaining: 0 });
     }
 
-    // tell the model where the conversation stands, so it asks who the visitor is early and only once
     const known = await store.visitorKnown(body.conversationId, ip);
-    const visitorTurn = messages.filter((m) => m.role === 'user').length;
-    const availabilityMentioned = messages.some((m) => m.role === 'assistant' && /finishing up|looking for (his|a) (next|new)/i.test(m.content));
-    const state = `\n\nConversation state: today is ${new Date().toISOString().slice(0, 10)}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}. His availability has ${availabilityMentioned ? 'ALREADY been mentioned, so don\'t mention it again unless asked directly' : 'not been mentioned yet'}.`;
-    const turnMessages = messages.map((m) => ({ role: m.role, content: m.content }));
+    const turn = prompt(messages, known);
 
-    const picked = await pickProvider(system + state, turnMessages);
+    const picked = await pickProvider(turn.system, turn.messages);
     if (!picked) {
       await record({ req, ip, body, question, reply: emptyReply(RESTING, 'resting') });
       return res.status(503).json({ error: 'resting', answer: RESTING, offer_contact: true, remaining: admitted.remaining });
     }
     const { name, reserved } = picked;
 
-    let result;
+    let reply, result;
     try {
-      result = await providers[name].run({ system: system + state, messages: turnMessages, schema, limits, config: spec.providers[name] });
+      ({ reply, result } = await respond({ provider: name, turn, known, conversationId: body.conversationId }));
     } catch (err) {
       if (reserved) await guard.settle(-reserved);
       throw err;
@@ -153,25 +123,12 @@ async function agentChat(req, res) {
     if (reserved) await guard.settle(result.costUsd - reserved);
     console.log(`agent: ${result.model} in=${result.usage.input} out=${result.usage.output} $${result.costUsd.toFixed(5)}`);
 
-    const reply = normalise(result.raw);
-    // follow-ups become the visitor's next message when clicked, so they must be questions
-    // about Łukasz, never the agent asking the visitor something ("What role are you hiring for?")
-    reply.followups = reply.followups.filter(isVisitorQuestion);
-    // house style: no em dashes, whatever the model does
-    reply.answer = reply.answer.replace(/\s*—\s*/g, ', ');
     const genuine = reply.intent === 'genuine';
     if (!genuine) {
-      // keep it short and don't court someone who's abusing or messing with the agent
-      Object.assign(reply, { offer_contact: false, followups: [], fit: { strong: [], discuss: [] }, visitor: {} });
       await guard.strike(ip, reply.intent, { abusive: ABUSE_LIMIT, off_topic: OFF_TOPIC_LIMIT });
     } else {
       await guard.clearStrikes(ip, 'off_topic');
     }
-    // a fit report only makes sense against a pasted job description
-    if (question.length < JD_MIN_CHARS) reply.fit = { strong: [], discuss: [] };
-    if (!reply.answer && !reply.fit.strong.length) reply.answer = 'Sorry, I couldn\'t answer that. Leave your email and Łukasz will reply himself.';
-    // the model doesn't reliably ask on its own, so make sure the first answer does
-    if (genuine && !known && !isEmail(reply.visitor?.email) && visitorTurn === 1 && !/\?\s*$/.test(reply.answer) && !/email/i.test(reply.answer)) reply.ask = ASK_WHO;
 
     const contactSaved = await record({ req, ip, body, question, reply: { ...reply, status: genuine ? 'ok' : reply.intent }, model: result.model, costUsd: result.costUsd, notifyNew: genuine });
     const { visitor, ...publicReply } = reply;
