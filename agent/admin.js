@@ -271,6 +271,10 @@ aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(
 aside dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 12px;margin:0;font-size:14px}
 aside dt{color:var(--muted)}aside dd{margin:0;overflow-wrap:anywhere}
 .person{font-size:18px;font-weight:600}
+.filters{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:20px 0 0}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.filters input{padding:8px 10px;border-radius:8px;border:1px solid var(--line);font:inherit;font-size:14px;background:var(--card)}
+.filters button{padding:9px 14px;border-radius:8px;border:0;background:var(--teal-deep);color:#fff;font-weight:600;cursor:pointer}
 .notice{margin:16px 0;padding:12px 16px;border-radius:10px;background:var(--teal-soft);color:var(--teal-deep)}
 .forget{margin-top:32px}
 .forget input[type=email]{padding:10px 12px;border-radius:10px;border:1px solid #ccc;margin:12px 8px 0 0;min-width:260px;font:inherit}
@@ -313,13 +317,30 @@ async function stats(convs) {
 </div>`;
 }
 
+// what the filter form can narrow the list by, as query parameters
+const FILTERS = ['text', 'country', 'city', 'ip'];
+
+function filterForm(f) {
+  const input = (name, label, size) => `<label>${label}<input name="${name}" value="${esc(f[name] || '')}" size="${size}"></label>`;
+  const any = FILTERS.some((k) => f[k]);
+  return `<form class="filters" method="get" action="${BASE}">
+${input('text', 'Said', 22)}${input('country', 'Country', 4)}${input('city', 'City', 12)}${input('ip', 'IP', 14)}
+${f.filter && f.filter !== 'all' ? `<input type="hidden" name="filter" value="${esc(f.filter)}">` : ''}<button type="submit">Filter</button>${any ? ` <a href="${BASE}">Clear</a>` : ''}
+</form>`;
+}
+
 async function list(req, res) {
-  const all = await store.list(500);
+  const f = Object.fromEntries(FILTERS.map((k) => [k, String(req.query[k] || '').trim().slice(0, 100)]));
+  const filtering = FILTERS.some((k) => f[k]);
+  const everything = await store.list(500);
+  const all = filtering ? await store.search(f) : everything;
   const filter = ['top', 'leads', 'flagged'].includes(req.query.filter) ? req.query.filter : 'all';
   const shown = filter === 'top'
     ? all.filter((c) => priority(c).score >= 20).sort((a, b) => priority(b).score - priority(a).score)
     : filter === 'leads' ? all.filter(isLead) : filter === 'flagged' ? all.filter(flagged) : all;
-  const tab = (key, label, n) => `<a class="${filter === key ? 'on' : ''}" href="${BASE}${key === 'all' ? '' : `?filter=${key}`}">${label} · ${n}</a>`;
+  // tabs keep the filters, the filters keep the tab
+  const query = (extra) => new URLSearchParams(Object.entries({ ...f, ...extra }).filter(([, v]) => v && v !== 'all')).toString();
+  const tab = (key, label, n) => { const q = query({ filter: key }); return `<a class="${filter === key ? 'on' : ''}" href="${BASE}${q ? `?${q}` : ''}">${label} · ${n}</a>`; };
 
   const rows = shown.map((c) => {
     const qs = questions(c);
@@ -338,9 +359,10 @@ async function list(req, res) {
 <div class="sub">Everything visitors asked the site agent, newest first. Kept ${esc(process.env.AGENT_RETENTION_DAYS || '180')} days.</div>
 ${req.query.done ? `<div class="notice">${esc(String(req.query.done).slice(0, 200))}</div>` : ''}
 ${await switchPanel()}
-${await stats(all)}
+${await stats(everything)}
+${filterForm({ ...f, filter })}
 <nav class="tabs">${tab('top', 'Top leads', all.filter((c) => priority(c).score >= 20).length)}${tab('all', 'All', all.length)}${tab('leads', 'Leads', all.filter(isLead).length)}${tab('flagged', 'Flagged', all.filter(flagged).length)}</nav>
-<div class="list">${rows || `<div class="empty">${filter === 'all' ? 'No conversations yet.' : 'Nothing here yet.'}</div>`}</div>
+<div class="list">${rows || `<div class="empty">${filtering ? 'No conversations match.' : filter === 'all' ? 'No conversations yet.' : 'Nothing here yet.'}</div>`}</div>
 <form class="forget" method="post" action="${BASE}/forget" onsubmit="return confirm('Delete every conversation, lead and trace for this email? This cannot be undone.')">
 <h2>Delete someone's data</h2>
 <div class="sub">When a visitor asks to be forgotten: deletes their conversations, leads and Braintrust traces.</div>

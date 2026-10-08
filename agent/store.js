@@ -23,9 +23,65 @@ function lookupGeo(req) {
   };
 }
 
+/* ───── storage: JSON documents with a search index where Redis has the modules ───── */
+
+// Search and JSON come with Redis 8 and Redis Stack (production); a plain local Redis has neither,
+// so conversations are stored as strings there and searched in code.
+let jsonMode;
+async function hasJson() {
+  if (jsonMode === undefined) {
+    try {
+      await redis.sendCommand(['JSON.TYPE', 'agent:probe']);
+      jsonMode = true;
+    } catch {
+      jsonMode = false;
+    }
+  }
+  return jsonMode;
+}
+
+// Fields the index can sort and filter on, derived from the conversation each time it's saved.
+function withIndexFields(conv) {
+  return {
+    ...conv,
+    startedTs: Math.floor(Date.parse(conv.startedAt) / 1000),
+    updatedTs: Math.floor(Date.parse(conv.updatedAt || conv.startedAt) / 1000),
+    hasContact: conv.visitor && conv.visitor.email ? 'yes' : 'no',
+  };
+}
+
+/**
+ * The search index over every conversation document. Redis keeps it current as conversations
+ * are written, changed or expire. Query it with FT.SEARCH, e.g. FT.SEARCH agent-conversations "@country:{PL}".
+ */
+async function ensureIndex() {
+  if (!(await hasJson())) return false;
+  try {
+    await redis.sendCommand(['FT.CREATE', keys.conversationIndex, 'ON', 'JSON', 'PREFIX', '1', key(''), 'SCHEMA',
+      '$.geo.city', 'AS', 'city', 'TAG',
+      '$.geo.region', 'AS', 'region', 'TAG',
+      '$.geo.country', 'AS', 'country', 'TAG',
+      '$.ip', 'AS', 'ip', 'TAG',
+      '$.startedTs', 'AS', 'started', 'NUMERIC', 'SORTABLE',
+      '$.updatedTs', 'AS', 'updated', 'NUMERIC', 'SORTABLE',
+      '$.model', 'AS', 'model', 'TAG',
+      '$.costUsd', 'AS', 'cost', 'NUMERIC',
+      '$.visitor.email', 'AS', 'email', 'TAG',
+      '$.hasContact', 'AS', 'contact', 'TAG',
+      '$.messages[*].content', 'AS', 'text', 'TEXT']);
+  } catch (err) {
+    if (!/already exists/i.test(err.message)) throw err;
+  }
+  return true;
+}
+
 async function get(id) {
-  const raw = await redis.get(key(id));
-  return raw ? JSON.parse(raw) : null;
+  const k = key(id);
+  const type = await redis.type(k);
+  if (type === 'none') return null;
+  // older conversations may still be strings until the startup migration converts them
+  if (type === 'string') return JSON.parse(await redis.get(k));
+  return redis.json.get(k);
 }
 
 /**
@@ -41,7 +97,15 @@ async function resolveOwned(id, ip) {
 
 async function save(conv) {
   conv.messages = conv.messages.slice(-MAX_MESSAGES);
-  await redis.set(key(conv.id), JSON.stringify(conv), { EX: retentionSeconds() });
+  const k = key(conv.id);
+  if (await hasJson()) {
+    // a conversation still stored as a string has to go before it can become a document
+    if ((await redis.type(k)) === 'string') await redis.del(k);
+    await redis.json.set(k, '$', withIndexFields(conv));
+    await redis.expire(k, retentionSeconds());
+  } else {
+    await redis.set(k, JSON.stringify(conv), { EX: retentionSeconds() });
+  }
   await redis.zAdd(INDEX, { score: Date.parse(conv.updatedAt), value: conv.id });
 }
 
@@ -152,4 +216,29 @@ async function idsByEmail(email) {
   return ids;
 }
 
-module.exports = { recordTurn, setVisitor, visitorKnown, get, list, remove, removeLeads, idsByEmail, ID_RE };
+/* ───── finding conversations ───── */
+
+// TAG values need their punctuation and spaces escaped in a query; letters (including Polish) don't.
+const tag = (v) => String(v).trim().replace(/[,.<>{}[\]"':;!@#$%^&*()\-+=~|/\\ ?]/g, '\\$&');
+const words = (q) => String(q || '').split(/\s+/).map((w) => w.replace(/[^\p{L}\p{N}]/gu, '')).filter((w) => w.length > 1);
+
+/**
+ * Conversations matching every filter given: country, region, city, ip (exact, case-insensitive),
+ * contact ('yes' or 'no') and text (all words, anywhere in what was said). Newest first.
+ */
+async function search(filters = {}, limit = 500) {
+  const tags = ['country', 'region', 'city', 'ip', 'contact'].filter((f) => filters[f]);
+  const text = words(filters.text);
+  if (await ensureIndex()) {
+    const parts = tags.map((f) => `@${f}:{${tag(filters[f])}}`);
+    if (text.length) parts.push(`@text:(${text.join(' ')})`);
+    const res = await redis.ft.search(keys.conversationIndex, parts.join(' ') || '*', { SORTBY: { BY: 'updated', DIRECTION: 'DESC' }, LIMIT: { from: 0, size: limit } });
+    return res.documents.map((d) => (typeof d.value.$ === 'string' ? JSON.parse(d.value.$) : d.value));
+  }
+  const lower = (v) => String(v || '').trim().toLowerCase();
+  const field = { country: (c) => c.geo?.country, region: (c) => c.geo?.region, city: (c) => c.geo?.city, ip: (c) => c.ip, contact: (c) => (c.visitor?.email ? 'yes' : 'no') };
+  return (await list(limit)).filter((c) => tags.every((f) => lower(field[f](c)) === lower(filters[f]))
+    && text.every((w) => c.messages.some((m) => lower(m.content).includes(lower(w)))));
+}
+
+module.exports = { recordTurn, setVisitor, visitorKnown, get, list, remove, removeLeads, idsByEmail, search, ensureIndex, hasJson, withIndexFields, retentionSeconds, ID_RE };

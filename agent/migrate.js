@@ -1,5 +1,6 @@
 const { client: redis } = require('../redis');
 const keys = require('./keys');
+const store = require('./store');
 
 async function move(from, to) {
   if ((await redis.exists(from)) && !(await redis.exists(to))) await redis.rename(from, to); // keeps the TTL
@@ -34,4 +35,29 @@ async function migrateKeys() {
   }
 }
 
-module.exports = { migrateKeys };
+/**
+ * Turns conversations stored as JSON strings into JSON documents the search index can read,
+ * keeping each one's remaining time to expiry, then makes sure the index exists. Does nothing
+ * where Redis has no JSON module (a plain local Redis). Safe to run on every start.
+ */
+async function migrateConversations() {
+  if (!(await store.hasJson())) return;
+  let converted = 0;
+  for await (const k of redis.scanIterator({ MATCH: keys.conversation('*'), COUNT: 200 })) {
+    if ((await redis.type(k)) !== 'string') continue;
+    const raw = await redis.get(k);
+    const ttl = await redis.pTTL(k);
+    let conv;
+    try { conv = JSON.parse(raw); } catch { continue; }
+    await redis.multi()
+      .del(k)
+      .json.set(k, '$', store.withIndexFields(conv))
+      .pExpire(k, ttl > 0 ? ttl : store.retentionSeconds() * 1000)
+      .exec();
+    converted++;
+  }
+  await store.ensureIndex();
+  if (converted) console.log(`agent: ${converted} conversations converted to JSON documents`);
+}
+
+module.exports = { migrateKeys, migrateConversations };

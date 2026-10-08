@@ -13,6 +13,8 @@ module.exports = {
 
   conversation: (id) => `agent:data:conversation:${id}`,
   conversations: 'agent:data:conversations',
+  // the search index over conversation documents (not a key; queried with FT.SEARCH)
+  conversationIndex: 'agent-conversations',
   leads: 'agent:data:leads',
   killswitch: 'agent:data:killswitch',
 

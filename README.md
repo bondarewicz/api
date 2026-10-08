@@ -138,6 +138,18 @@ All agent keys are defined in `agent/keys.js`, in three groups:
 
 `visits:count` belongs to the playground.
 
+Conversations are JSON documents (RedisJSON) with a search index, `agent-conversations`, where Redis has the search and JSON modules (Redis 8 or Redis Stack, as on Railway). Query it directly, for example in RedisInsight:
+
+```
+FT.SEARCH agent-conversations "@country:{PL}"
+FT.SEARCH agent-conversations "@city:{Berlin} @contact:{yes}" SORTBY updated DESC
+FT.SEARCH agent-conversations "@ip:{1\.2\.3\.4}"
+FT.SEARCH agent-conversations "@text:kubernetes"
+FT.SEARCH agent-conversations "@started:[1791300000 +inf]"
+```
+
+Indexed fields: `city`, `region`, `country`, `ip`, `model`, `email`, `contact` (yes/no) as tags; `started`, `updated` (Unix seconds) and `cost` as numbers; `text`, everything said. The admin page's filters (said, country, city, IP) use the same index. Older string-stored conversations are converted on startup, keeping their expiry. On a Redis without the modules (a plain local install), conversations stay strings and the filters search in code.
+
 ## Configuration
 
 | Variable | Purpose |
