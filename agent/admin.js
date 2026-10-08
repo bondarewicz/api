@@ -156,8 +156,10 @@ const place = (c) => { const g = c.geo || {}; return [g.city, g.countryName || g
 
 function source(c) {
   try {
-    const utm = new URL(c.landing).searchParams.get('utm_source');
-    if (utm) return utm;
+    // ?ref=linkedin on links you share (LinkedIn often hides the referrer), or a utm_source
+    const params = new URL(c.landing).searchParams;
+    const tagged = params.get('ref') || params.get('utm_source');
+    if (tagged) return tagged.slice(0, 40);
   } catch { /* no landing url */ }
   if (!c.referrer) return 'Direct';
   const h = host(c.referrer);
@@ -198,7 +200,7 @@ function priority(c) {
   if (asked.some((m) => ROLE_TALK.test(m.content))) { score += 15; reasons.push('talked about a role or project'); }
   if (v.company) { score += 10; reasons.push(`named a company (${v.company})`); }
   if (asked.length >= 3) { score += 10; reasons.push(`${asked.length} questions`); }
-  if (/linkedin\./i.test(c.referrer || '')) { score += 5; reasons.push('came from LinkedIn'); }
+  if (/linkedin\./i.test(c.referrer || '') || /^linkedin$/i.test(source(c))) { score += 5; reasons.push('came from LinkedIn'); }
   if (offTopic + abusive) { score -= 10 * (offTopic + abusive); reasons.push(`${offTopic + abusive} off-topic or abusive ${offTopic + abusive === 1 ? 'message' : 'messages'}`); }
   const level = score >= 50 ? 'High' : score >= 20 ? 'Medium' : 'Low';
   return { level, score, reasons: reasons.length ? reasons : ['a quick look, nothing more yet'] };
