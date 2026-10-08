@@ -1,8 +1,8 @@
 /**
  * Publishes the agent's prompt from git to Braintrust as the prompt "site-agent", so experiments
  * and the playground in Braintrust start from exactly what production runs: system.md + the
- * public profile, the conversation state, Claude Haiku and the reply schema. Each push whose
- * prompt changed becomes a new version of it; git stays the source of truth.
+ * public profile, the conversation state, the production model and the reply schema. Each push
+ * whose prompt or model changed becomes a new version of it; git stays the source of truth.
  *
  * In the playground or "Create experiments", pick the "agent-cases" dataset and set
  * Advanced → "Appended dataset messages path" to `input.messages`, so each case's conversation
@@ -13,6 +13,7 @@ const { execSync } = require('child_process');
 const { login } = require('braintrust');
 const { system, schema, promptVersion } = require('../agent/respond');
 const spec = require('../agent/agent.json');
+const { modelConfig } = require('../agent/providers/anthropic');
 
 const project = process.env.BRAINTRUST_PROJECT || 'bondarewicz';
 const SLUG = 'site-agent';
@@ -31,8 +32,9 @@ const SLUG = 'site-agent';
 
   const { objects: [proj] } = await call('GET', `/v1/project?project_name=${encodeURIComponent(project)}`);
   const { objects: [current] } = await call('GET', `/v1/prompt?project_id=${proj.id}&slug=${SLUG}`);
-  if (current?.metadata?.prompt_version === promptVersion) {
-    console.log(`site-agent is already at prompt version ${promptVersion}`);
+  const anthropic = modelConfig(spec.providers.anthropic);
+  if (current?.metadata?.prompt_version === promptVersion && current?.metadata?.model === anthropic.model) {
+    console.log(`site-agent is already at prompt version ${promptVersion} on ${anthropic.model}`);
     return;
   }
 
@@ -48,14 +50,13 @@ const SLUG = 'site-agent';
     }
   })();
 
-  const anthropic = spec.providers.anthropic;
   const prompt = await call('PUT', '/v1/prompt', {
     project_id: proj.id,
     name: 'Site agent',
     slug: SLUG,
     description: `The bondarewicz.com agent from git (agent/system.md + profile), prompt version ${promptVersion}${commit ? `, commit ${commit}${dirty ? ' with uncommitted changes' : ''}` : ''}.`,
     tags: [anthropic.model, `prompt-${promptVersion}`],
-    metadata: { prompt_version: promptVersion, commit, uncommitted: dirty },
+    metadata: { prompt_version: promptVersion, model: anthropic.model, commit, uncommitted: dirty },
     prompt_data: {
       prompt: {
         type: 'chat',
@@ -65,13 +66,14 @@ const SLUG = 'site-agent';
       options: {
         model: anthropic.model,
         params: {
-          max_tokens: spec.limits.maxOutputTokens,
+          // models that always think need room for it on top of the answer
+          max_tokens: anthropic.maxOutputTokens || spec.limits.maxOutputTokens,
           response_format: { type: 'json_schema', json_schema: { name: 'reply', schema, strict: true } },
         },
       },
     },
   });
-  console.log(`site-agent now at prompt version ${promptVersion} (${prompt.id})`);
+  console.log(`site-agent now at prompt version ${promptVersion} on ${anthropic.model} (${prompt.id})`);
 })().catch((err) => {
   console.error(err.message);
   process.exit(1);

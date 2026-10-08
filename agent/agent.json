@@ -8,7 +8,7 @@
       "url": "http://localhost:11434"
     },
     "anthropic": {
-      "model": "claude-haiku-4-5",
+      "model": "claude-sonnet-5-5",
       "models": {
         "claude-haiku-4-5": {
           "priceUsdPerMTok": {

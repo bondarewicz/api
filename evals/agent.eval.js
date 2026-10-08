@@ -2,7 +2,7 @@
  * Experiment: runs the site agent over a dataset and scores every reply.
  *
  *   npm run eval                                                    # local Ollama, free
- *   AGENT_PROVIDER=anthropic npm run eval                           # Claude Haiku, as in production
+ *   AGENT_PROVIDER=anthropic npm run eval                           # Claude Sonnet 5.5, as in production
  *   AGENT_PROVIDER=anthropic ANTHROPIC_MODEL=claude-opus-5-5 npm run eval
  *   EVAL_TRIALS=1 npm run eval                                      # one run per case instead of three
  *   EVAL_BASELINE="<experiment name>" npm run eval                  # compare against a specific run

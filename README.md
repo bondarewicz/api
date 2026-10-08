@@ -80,7 +80,7 @@ The first tag says where a trace ran: `production` on Railway, `local` for a ser
 
 ```sh
 npm run eval                                                   # local Ollama, free
-AGENT_PROVIDER=anthropic npm run eval                          # Claude Haiku, as in production
+AGENT_PROVIDER=anthropic npm run eval                          # Claude Sonnet 5.5, as in production
 AGENT_PROVIDER=anthropic ANTHROPIC_MODEL=claude-sonnet-5-5 npm run eval
 EVAL_BASELINE="<experiment name>" npm run eval                 # compare with a specific run
 npm run eval:compare                                           # latest run of each model side by side
@@ -146,7 +146,7 @@ All agent keys are defined in `agent/keys.js`, in three groups:
 | `REDIS_URL` | Redis connection (required) |
 | `AGENT_PROVIDER` | `anthropic` in production; anything else uses Ollama |
 | `ANTHROPIC_API_KEY` | Claude API key |
-| `ANTHROPIC_MODEL` | Overrides the model in `agent.json` (default `claude-haiku-4-5`) |
+| `ANTHROPIC_MODEL` | Overrides the model in `agent.json` (default `claude-sonnet-5-5`) |
 | `OLLAMA_URL`, `OLLAMA_MODEL` | Local model (defaults `http://localhost:11434`, `gemma4`) |
 | `AGENT_FALLBACK` | `ollama` to fall back to Ollama when Claude's budget is spent; otherwise the agent rests |
 | `AGENT_ENABLED` | `false` turns the agent off |
