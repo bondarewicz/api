@@ -15,7 +15,7 @@ async function migrateKeys() {
   await move('agent:leads', keys.leads);
   await move('agent:killswitch', keys.killswitch);
   for await (const key of redis.scanIterator({ MATCH: 'agent:conv:*', COUNT: 200 })) {
-    await move(key, keys.conversation(key.slice('agent:conv:'.length)));
+    await move(key, keys.legacyConversation(key.slice('agent:conv:'.length)));
   }
   for await (const key of redis.scanIterator({ MATCH: 'agent:paused:*', COUNT: 200 })) {
     await move(key, keys.paused(key.slice('agent:paused:'.length)));
@@ -36,28 +36,39 @@ async function migrateKeys() {
 }
 
 /**
- * Turns conversations stored as JSON strings into JSON documents the search index can read,
- * keeping each one's remaining time to expiry, then makes sure the index exists. Does nothing
- * where Redis has no JSON module (a plain local Redis). Safe to run on every start.
+ * Moves conversations from one key each (strings, or JSON documents from the short-lived search
+ * index) into the single hash agent:data:conversations, keeping each one's remaining time to
+ * expiry, then drops that search index. The old keys go only after the hash has them, so an
+ * interrupted run is simply redone on the next start.
  */
 async function migrateConversations() {
-  if (!(await store.hasJson())) return;
-  let converted = 0;
-  for await (const k of redis.scanIterator({ MATCH: keys.conversation('*'), COUNT: 200 })) {
-    if ((await redis.type(k)) !== 'string') continue;
-    const raw = await redis.get(k);
-    const ttl = await redis.pTTL(k);
-    let conv;
-    try { conv = JSON.parse(raw); } catch { continue; }
-    await redis.multi()
-      .del(k)
-      .json.set(k, '$', store.withIndexFields(conv))
-      .pExpire(k, ttl > 0 ? ttl : store.retentionSeconds() * 1000)
-      .exec();
-    converted++;
+  const type = await redis.type(keys.conversations);
+  if (!['none', 'hash', 'zset'].includes(type)) {
+    console.error(`agent: ${keys.conversations} is a ${type}, not migrating conversations`);
+    return;
   }
-  await store.ensureIndex();
-  if (converted) console.log(`agent: ${converted} conversations converted to JSON documents`);
+  const found = [];
+  for await (const k of redis.scanIterator({ MATCH: keys.legacyConversation('*'), COUNT: 200 })) {
+    const t = await redis.type(k);
+    let conv;
+    try {
+      if (t === 'string') conv = JSON.parse(await redis.get(k));
+      else if (t === 'ReJSON-RL') conv = JSON.parse(await redis.sendCommand(['JSON.GET', k]));
+    } catch { continue; }
+    if (conv && conv.id) found.push({ k, conv, ttl: await redis.pTTL(k) });
+  }
+  // the old sorted-set index of ids sat under the hash's name
+  if (type === 'zset') await redis.del(keys.conversations);
+  for (const { conv, ttl } of found) {
+    const { startedTs, updatedTs, hasContact, ...clean } = conv; // fields only the search index needed
+    // a conversation already in the hash is the newer copy
+    if (await redis.hSetNX(keys.conversations, clean.id, JSON.stringify(clean, null, 2))) {
+      await store.expireIn(clean.id, ttl > 0 ? ttl : store.retentionSeconds() * 1000);
+    }
+  }
+  for (const { k } of found) await redis.del(k);
+  try { await redis.sendCommand(['FT.DROPINDEX', 'agent-conversations']); } catch { /* no index, or no search module */ }
+  if (found.length) console.log(`agent: ${found.length} conversations moved into ${keys.conversations}`);
 }
 
 module.exports = { migrateKeys, migrateConversations };

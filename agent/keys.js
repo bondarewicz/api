@@ -11,10 +11,10 @@ module.exports = {
   day,
   hour,
 
-  conversation: (id) => `agent:data:conversation:${id}`,
+  // one hash: field = conversation id, value = the conversation as JSON
   conversations: 'agent:data:conversations',
-  // the search index over conversation documents (not a key; queried with FT.SEARCH)
-  conversationIndex: 'agent-conversations',
+  // where each conversation used to live on its own (kept for the migration)
+  legacyConversation: (id) => `agent:data:conversation:${id}`,
   leads: 'agent:data:leads',
   killswitch: 'agent:data:killswitch',
 

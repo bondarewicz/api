@@ -317,6 +317,8 @@ aside dt{color:var(--muted)}aside dd{margin:0;overflow-wrap:anywhere}
 .filters label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
 .filters input{padding:8px 10px;border-radius:8px;border:1px solid var(--line);font:inherit;font-size:14px;background:var(--card)}
 .filters button{padding:9px 14px;border-radius:8px;border:0;background:var(--teal-deep);color:#fff;font-weight:600;cursor:pointer}
+.raw summary{cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.raw pre{margin:12px 0 0;max-height:480px;overflow:auto;font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .notice{margin:16px 0;padding:12px 16px;border-radius:10px;background:var(--teal-soft);color:var(--teal-deep)}
 .forget{margin-top:32px}
 .forget input[type=email]{padding:10px 12px;border-radius:10px;border:1px solid #ccc;margin:12px 8px 0 0;min-width:260px;font:inherit}
@@ -459,6 +461,7 @@ ${v.note ? `<p style="margin:10px 0 0">${esc(v.note)}</p>` : ''}
 <div class="card"><h2>How they arrived</h2>${dl([['Source', source(c)], ['Referrer', c.referrer], ['Landing page', c.landing], ['First asked', firstQ ? localTime(firstQ.at) : '']])}</div>
 <div class="card"><h2>Device</h2>${dl([['Browser', device(c.userAgent)], ['Screen', c.screen]])}</div>
 <div class="card"><h2>Cost</h2>${dl([['Model', c.model], ['Spent', `$${(c.costUsd || 0).toFixed(4)}`]])}</div>
+<details class="card raw"><summary>Raw data</summary><pre>${esc(JSON.stringify(c, null, 2))}</pre></details>
 <form class="card forget" method="post" action="${BASE}/c/${esc(c.id)}/delete" data-confirm="Delete this conversation, its leads and its traces? This cannot be undone."><h2>Delete</h2><div class="sub">If the visitor asks for their data to be removed.</div><input type="hidden" name="token" value="${switchToken('delete')}"><button type="submit">Delete this conversation</button></form>
 </aside>
 </div>`));
