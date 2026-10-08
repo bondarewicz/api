@@ -62,8 +62,8 @@ async function respond({ provider, turn, known }) {
   // follow-ups become the visitor's next message when clicked, so they must be questions
   // about Łukasz, never the agent asking the visitor something ("What role are you hiring for?")
   reply.followups = reply.followups.filter((q) => isVisitorQuestion(q, turn.lang));
-  // house style: no em dashes, whatever the model does
-  reply.answer = reply.answer.replace(/\s*—\s*/g, ', ');
+  // house style: no dashes as punctuation (em dash, en dash, or a hyphen with spaces), whatever the model does
+  reply.answer = reply.answer.replace(/\s*—\s*|\s+[–-]\s+/g, ', ');
   const genuine = reply.intent === 'genuine';
   if (!genuine) {
     // keep it short and don't court someone who's abusing or messing with the agent
