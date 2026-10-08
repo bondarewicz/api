@@ -127,6 +127,9 @@ async function requireAdmin(req, res, next) {
   }
   res.set('Cache-Control', 'no-store');
   res.set('X-Robots-Tag', 'noindex');
+  // only the page's own script may run (see ADMIN_SCRIPT); everything else stays as helmet sets it
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
+  res.set('Content-Security-Policy', `default-src 'self'; script-src 'nonce-${res.locals.nonce}'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'`);
   // helmet's no-referrer makes browsers send "Origin: null" on form posts, which the switch's
   // same-origin check needs; same-origin still never leaks admin URLs to other sites
   res.set('Referrer-Policy', 'same-origin');
@@ -213,7 +216,46 @@ function badges(c) {
 
 /* ───── layout ───── */
 
-const page = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+// The admin's one script: confirmations for the delete forms, and filtering as you type. The
+// security policy blocks inline handlers, so it runs under a per-request nonce instead.
+const ADMIN_SCRIPT = `
+document.addEventListener('submit', (e) => {
+  const message = e.target.dataset.confirm;
+  if (message && !confirm(message)) e.preventDefault();
+});
+const form = document.querySelector('form.filters');
+if (form) {
+  let timer, pending;
+  form.querySelector('button').hidden = true;
+  const refresh = async () => {
+    const params = new URLSearchParams(new FormData(form));
+    for (const [k, v] of [...params]) if (!v) params.delete(k);
+    const url = location.pathname + (params.toString() ? '?' + params : '');
+    if (pending) pending.abort();
+    pending = new AbortController();
+    try {
+      const html = await (await fetch(url, { signal: pending.signal })).text();
+      const next = new DOMParser().parseFromString(html, 'text/html');
+      for (const sel of ['nav.tabs', '.list']) {
+        const now = document.querySelector(sel), fresh = next.querySelector(sel);
+        if (now && fresh) now.replaceWith(fresh);
+      }
+      const clear = form.querySelector('a'), freshClear = next.querySelector('form.filters a');
+      if (clear) clear.remove();
+      if (freshClear) form.append(freshClear);
+      history.replaceState(null, '', url);
+    } catch (err) {
+      if (err.name !== 'AbortError') location.href = url;
+    }
+  };
+  form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(refresh, 250); });
+  form.addEventListener('submit', (e) => { e.preventDefault(); clearTimeout(timer); refresh(); });
+}
+`;
+
+const pageFor = (res, title, body) => page(title, body, res.locals.nonce);
+
+const page = (title, body, nonce) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta name="robots" content="noindex">
 <style>
 :root{--bg:#F5F3EE;--ink:#141A24;--muted:#5B6372;--line:#DDDAD2;--card:#fff;--night:#0E1420;--teal:#7FC8B6;--teal-deep:#1F6B5C;--teal-soft:#E3F0EC;--amber:#E8A33D;--warn:#9A4A00;--warn-soft:#FBEBD7}
@@ -293,7 +335,8 @@ aside dt{color:var(--muted)}aside dd{margin:0;overflow-wrap:anywhere}
 @media (max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr);gap:6px}.row .when{text-align:left}.msg{max-width:100%}}
 </style></head><body>
 <header class="top"><div class="in"><a href="${BASE}"><span class="dot"></span>bondarewicz.com · visitor conversations</a><span class="tz">times in ${esc(TZ)}</span></div></header>
-<main><!--email_off-->${body}<!--/email_off--></main></body></html>`; // email_off stops Cloudflare masking addresses
+<main><!--email_off-->${body}<!--/email_off--></main>
+<script nonce="${nonce}">${ADMIN_SCRIPT}</script></body></html>`; // email_off stops Cloudflare masking addresses
 
 /* ───── list ───── */
 
@@ -355,7 +398,7 @@ async function list(req, res) {
 </a>`;
   }).join('');
 
-  res.send(page('Visitor conversations', `<h1>Visitor conversations</h1>
+  res.send(pageFor(res, 'Visitor conversations', `<h1>Visitor conversations</h1>
 <div class="sub">Everything visitors asked the site agent, newest first. Kept ${esc(process.env.AGENT_RETENTION_DAYS || '180')} days.</div>
 ${req.query.done ? `<div class="notice">${esc(String(req.query.done).slice(0, 200))}</div>` : ''}
 ${await switchPanel()}
@@ -363,7 +406,7 @@ ${await stats(everything)}
 ${filterForm({ ...f, filter })}
 <nav class="tabs">${tab('top', 'Top leads', all.filter((c) => priority(c).score >= 20).length)}${tab('all', 'All', all.length)}${tab('leads', 'Leads', all.filter(isLead).length)}${tab('flagged', 'Flagged', all.filter(flagged).length)}</nav>
 <div class="list">${rows || `<div class="empty">${filtering ? 'No conversations match.' : filter === 'all' ? 'No conversations yet.' : 'Nothing here yet.'}</div>`}</div>
-<form class="forget" method="post" action="${BASE}/forget" onsubmit="return confirm('Delete every conversation, lead and trace for this email? This cannot be undone.')">
+<form class="forget" method="post" action="${BASE}/forget" data-confirm="Delete every conversation, lead and trace for this email? This cannot be undone.">
 <h2>Delete someone's data</h2>
 <div class="sub">When a visitor asks to be forgotten: deletes their conversations, leads and Braintrust traces.</div>
 <input type="hidden" name="token" value="${switchToken('delete')}"><input type="email" name="email" placeholder="Their email address" required><button type="submit">Delete</button>
@@ -382,7 +425,7 @@ const STATUS = { off_topic: 'Off-topic', abusive: 'Abusive', resting: 'Agent was
 
 async function detail(req, res) {
   const c = store.ID_RE.test(req.params.id) ? await store.get(req.params.id) : null;
-  if (!c) return res.status(404).send(page('Not found', `<a class="back" href="${BASE}">← All conversations</a><h1>Not found</h1><p class="muted">It may have expired.</p>`));
+  if (!c) return res.status(404).send(pageFor(res, 'Not found', `<a class="back" href="${BASE}">← All conversations</a><h1>Not found</h1><p class="muted">It may have expired.</p>`));
   const g = c.geo || {};
   const v = c.visitor || {};
   const who = v.name || v.email || 'Anonymous visitor';
@@ -398,7 +441,7 @@ async function detail(req, res) {
     return `<div class="who-label">Agent</div><div class="msg assistant">${status}${esc(m.content)}${fitHtml(m.fit)}</div>`;
   }).join('');
 
-  res.send(page(`${who} · conversation`, `<a class="back" href="${BASE}">← All conversations</a>
+  res.send(pageFor(res, `${who} · conversation`, `<a class="back" href="${BASE}">← All conversations</a>
 <div class="detail">
 <section>
 <h1>${esc(who)} ${badges(c)}</h1>
@@ -416,7 +459,7 @@ ${v.note ? `<p style="margin:10px 0 0">${esc(v.note)}</p>` : ''}
 <div class="card"><h2>How they arrived</h2>${dl([['Source', source(c)], ['Referrer', c.referrer], ['Landing page', c.landing], ['First asked', firstQ ? localTime(firstQ.at) : '']])}</div>
 <div class="card"><h2>Device</h2>${dl([['Browser', device(c.userAgent)], ['Screen', c.screen]])}</div>
 <div class="card"><h2>Cost</h2>${dl([['Model', c.model], ['Spent', `$${(c.costUsd || 0).toFixed(4)}`]])}</div>
-<form class="card forget" method="post" action="${BASE}/c/${esc(c.id)}/delete" onsubmit="return confirm('Delete this conversation, its leads and its traces? This cannot be undone.')"><h2>Delete</h2><div class="sub">If the visitor asks for their data to be removed.</div><input type="hidden" name="token" value="${switchToken('delete')}"><button type="submit">Delete this conversation</button></form>
+<form class="card forget" method="post" action="${BASE}/c/${esc(c.id)}/delete" data-confirm="Delete this conversation, its leads and its traces? This cannot be undone."><h2>Delete</h2><div class="sub">If the visitor asks for their data to be removed.</div><input type="hidden" name="token" value="${switchToken('delete')}"><button type="submit">Delete this conversation</button></form>
 </aside>
 </div>`));
 }
