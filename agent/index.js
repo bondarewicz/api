@@ -1,5 +1,6 @@
 const spec = require('./agent.json');
 const guard = require('./guard');
+const { client: redis } = require('../redis');
 const store = require('./store');
 const keys = require('./keys');
 const admin = require('./admin');
@@ -163,6 +164,22 @@ function agentProfile(req, res) {
   res.json(promptProfile); // public part only: no private projects, no email
 }
 
+/**
+ * Whether the agent can answer right now: Redis reachable and the agent not switched off
+ * (kill switch or AGENT_ENABLED). The site's online dot uses it.
+ */
+async function agentStatus(req, res) {
+  res.set('Cache-Control', 'no-store');
+  try {
+    // a Redis that's down would leave the command waiting, so give up after 2 seconds
+    await Promise.race([redis.ping(), new Promise((_, reject) => setTimeout(() => reject(new Error('redis timeout')), 2000))]);
+    const off = process.env.AGENT_ENABLED === 'false' || Boolean(await guard.killState());
+    res.json({ online: !off });
+  } catch (err) {
+    res.status(503).json({ online: false });
+  }
+}
+
 const agentLead = makeLeadHandler({ visitorIp: guard.visitorIp, admit: guard.admit, limits });
 
-module.exports = { agentChat, agentProfile, agentLead, admin };
+module.exports = { agentChat, agentProfile, agentStatus, agentLead, admin };

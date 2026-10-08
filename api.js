@@ -21,7 +21,7 @@ const { fileUpload } = require('./routes');
 const { getReplay, postReplay} = require('./routes');
 const { postDelay } = require('./routes');
 const { qrCode, visits, weather } = require('./routes');
-const { agentChat, agentProfile, agentLead, admin } = require('./agent');
+const { agentChat, agentProfile, agentStatus, agentLead, admin } = require('./agent');
 const { requireCloudflare } = require('./agent/guard');
 // 
 const apiRoutes = express.Router();
@@ -561,6 +561,8 @@ apiRoutes.post('/agent/lead', agentLead);
  *         description: Profile JSON
  */
 apiRoutes.get('/agent/profile', agentProfile);
+// whether the agent can answer right now; drives the site's online dot
+apiRoutes.get('/agent/status', agentStatus);
 
 // private conversation log (basic auth, ADMIN_PASSWORD); deliberately left out of the Swagger docs
 apiRoutes.get('/agent/admin', admin.requireAdmin, admin.list);
