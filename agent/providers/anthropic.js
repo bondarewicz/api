@@ -27,12 +27,16 @@ function modelConfig(config) {
 /**
  * Runs the agent on Claude with structured output.
  */
-async function run({ system, messages, schema, limits, config }) {
+async function run({ system, cacheable, state, messages, schema, limits, config }) {
   const { model, priceUsdPerMTok, effort, maxOutputTokens, fallbacks } = modelConfig(config);
   const params = {
     model,
     max_tokens: maxOutputTokens || limits.maxOutputTokens,
-    system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+    // cache only what's the same for every visitor, so answers reuse it; the state line changes
+    // every answer and follows uncached
+    system: cacheable
+      ? [{ type: 'text', text: cacheable, cache_control: { type: 'ephemeral' } }, { type: 'text', text: state }]
+      : [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
     messages,
     output_config: { format: { type: 'json_schema', schema }, ...(effort && { effort }) },
   };

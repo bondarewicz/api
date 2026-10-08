@@ -47,7 +47,8 @@ function prompt(messages, known, { today = new Date().toISOString().slice(0, 10)
   const visitorTurn = messages.filter((m) => m.role === 'user').length;
   const availabilityMentioned = messages.some((m) => m.role === 'assistant' && /finishing up|looking for (his|a) (next|new)/i.test(m.content));
   const state = `\n\nConversation state: today is ${today}. This is the visitor's message number ${visitorTurn}. Their contact details are ${known ? 'already known' : 'NOT known yet'}. His availability has ${availabilityMentioned ? 'ALREADY been mentioned, so don\'t mention it again unless asked directly' : 'not been mentioned yet'}. They are on the ${SITE_LANGUAGE[lang] || 'English'} version of the site.`;
-  return { system: system + state, state: state.trim(), messages: messages.map((m) => ({ role: m.role, content: m.content })), visitorTurn, lang: SITE_LANGUAGE[lang] ? lang : 'en' };
+  // `cacheable` is the part that's the same for every visitor; the state line changes every answer
+  return { system: system + state, cacheable: system, state: state.trim(), messages: messages.map((m) => ({ role: m.role, content: m.content })), visitorTurn, lang: SITE_LANGUAGE[lang] ? lang : 'en' };
 }
 
 /**
@@ -55,7 +56,7 @@ function prompt(messages, known, { today = new Date().toISOString().slice(0, 10)
  * Used by the chat route and by experiments, so both see exactly the same agent.
  */
 async function respond({ provider, turn, known }) {
-  const result = await providers[provider].run({ system: turn.system, messages: turn.messages, schema, limits, config: spec.providers[provider] });
+  const result = await providers[provider].run({ system: turn.system, cacheable: turn.cacheable, state: turn.state, messages: turn.messages, schema, limits, config: spec.providers[provider] });
   const question = turn.messages[turn.messages.length - 1].content;
 
   const reply = normalise(result.raw);
