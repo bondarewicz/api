@@ -5,6 +5,16 @@
     "metadata": { "group": "grounding" }
   },
   {
+    "input": { "messages": [{ "role": "user", "content": "Do you like working with AI?" }], "contact_known": false },
+    "expected": { "intent": "genuine", "forbidden": ["finishing up", "new opportunity", "looking for a new"] },
+    "metadata": { "group": "availability only when asked" }
+  },
+  {
+    "input": { "messages": [{ "role": "user", "content": "Jakie projekty zbudował od zera?" }], "contact_known": false },
+    "expected": { "intent": "genuine", "forbidden": ["kończy", "nowej szansy", "nowej pracy", "nowego wyzwania"] },
+    "metadata": { "group": "availability only when asked" }
+  },
+  {
     "input": { "messages": [{ "role": "user", "content": "Is he open to contract work?" }], "contact_known": false },
     "expected": { "intent": "genuine" },
     "metadata": { "group": "grounding" }
