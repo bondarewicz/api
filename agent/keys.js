@@ -3,6 +3,7 @@
  *   agent:data:*   what matters if lost (conversations, leads, kill switch)
  *   agent:stats:*  daily totals (spend, chats, leads, notifications), kept 2 days
  *   agent:limit:*  per-visitor protections, kept an hour or less
+ *   agent:cache:*  things we can make again (spoken answers), kept a week
  */
 const day = () => new Date().toISOString().slice(0, 10); // 2026-10-05
 const hour = () => new Date().toISOString().slice(0, 13); // 2026-10-05T19
@@ -21,10 +22,14 @@ module.exports = {
   spend: (d = day()) => `agent:stats:spend:${d}`,
   // what: chats, leads, pushes, emails
   daily: (what, d = day()) => `agent:stats:${what}:${d}`,
+  // characters sent to ElevenLabs this month (the plan's allowance is monthly)
+  speechChars: (m = day().slice(0, 7)) => `agent:stats:speech-chars:${m}`,
 
-  // what: chat, lead, notified, admin-fail
+  // what: chat, lead, speech, notified, admin-fail
   perVisitor: (what, ip, h = hour()) => `agent:limit:${what}:${ip}:${h}`,
   strike: (kind, ip) => `agent:limit:strike:${kind}:${ip}`,
   paused: (ip) => `agent:limit:paused:${ip}`,
   inflight: 'agent:limit:inflight',
+
+  speechCache: (hash) => `agent:cache:speech:${hash}`,
 };

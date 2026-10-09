@@ -52,6 +52,10 @@
     "dailyBudgetUsd": 0.5,
     "leadsPerIpPerHour": 5,
     "leadsPerDay": 100,
-    "maxConcurrentCalls": 4
+    "maxConcurrentCalls": 4,
+    "speech": {
+      "perIpPerHour": 30,
+      "globalPerDay": 200
+    }
   }
 }

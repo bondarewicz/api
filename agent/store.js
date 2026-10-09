@@ -57,7 +57,7 @@ async function save(conv) {
  * Appends one visitor question and the agent's reply to the conversation,
  * creating it (with visitor metadata) on the first turn. Returns { conv, isNew }.
  */
-async function recordTurn({ id, req, ip, meta, question, reply, model, costUsd }) {
+async function recordTurn({ id, req, ip, meta, question, reply, model, costUsd, lang }) {
   if (!ID_RE.test(id || '')) return { conv: null, isNew: false };
   const now = new Date().toISOString();
   let conv;
@@ -85,9 +85,29 @@ async function recordTurn({ id, req, ip, meta, question, reply, model, costUsd }
   conv.model = model || conv.model;
   conv.costUsd = (conv.costUsd || 0) + (costUsd || 0);
   conv.messages.push({ role: 'user', content: question, at: now });
-  conv.messages.push({ role: 'assistant', content: reply.ask ? `${reply.answer}\n\n${reply.ask}` : reply.answer, fit: reply.fit, status: reply.status, at: now });
+  // the id lets the site ask for this answer spoken
+  const messageId = crypto.randomBytes(6).toString('hex');
+  conv.messages.push({ id: messageId, role: 'assistant', content: reply.ask ? `${reply.answer}\n\n${reply.ask}` : reply.answer, fit: reply.fit, status: reply.status, lang, at: now });
   await save(conv);
-  return { conv, isNew };
+  return { conv, isNew, messageId };
+}
+
+/**
+ * One of the agent's answers in a conversation this IP owns, or null.
+ */
+async function findAnswer(id, messageId, ip) {
+  if (!ID_RE.test(id || '') || !/^[0-9a-f]{12}$/.test(messageId || '')) return null;
+  const { conv } = await resolveOwned(id, ip);
+  return conv?.messages.find((m) => m.role === 'assistant' && m.id === messageId) || null;
+}
+
+// Counts characters spoken aloud, so voice cost shows next to the model cost.
+async function addSpeech(id, chars, ip) {
+  if (!ID_RE.test(id || '')) return;
+  const { conv } = await resolveOwned(id, ip);
+  if (!conv) return;
+  conv.speechChars = (conv.speechChars || 0) + chars;
+  await save(conv);
 }
 
 /**
@@ -166,4 +186,4 @@ async function search(filters = {}, limit = 500) {
     && text.every((w) => c.messages.some((m) => lower(m.content).includes(w)))).slice(0, limit);
 }
 
-module.exports = { recordTurn, setVisitor, visitorKnown, get, list, remove, removeLeads, idsByEmail, search, expireIn, retentionSeconds, ID_RE };
+module.exports = { recordTurn, findAnswer, addSpeech, setVisitor, visitorKnown, get, list, remove, removeLeads, idsByEmail, search, expireIn, retentionSeconds, ID_RE };
